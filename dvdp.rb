@@ -1,17 +1,19 @@
 require "./production"
 
 class DVD < Production
+  def init
+    say("Opening store")
+  end
+
   def action
-    schedule(2.hours, "Entering store") do
-      say("Add 3 apples to basket")
-      say("Add 1 banana to basket")
-      schedule(2.minutes, "Stand in queue") do
-        say("Paying at counter")
-        schedule(5.minutes, "Leaving store") do
-          done!
-        end
-      end
+    schedule(3.hours, "Buy new car", "a", "b", "c", :buy_new_car)
+    schedule(5.hours, "Sell bad car") do
+      done!
     end
+  end
+
+  def buy_new_car(a,b,c)
+    say("Hello!")
   end
 end
 

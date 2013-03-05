@@ -3,6 +3,7 @@ require "active_support/core_ext/integer"
 require "colorize"
 require "timecop"
 require "time"
+require "debugger"
 
 class Production
   def initialize
@@ -18,11 +19,20 @@ class Production
   def debug(message)
     $stdout.puts "[%s] %s" % [
       Time.now.strftime("%H:%M:%S").green, 
-      message.blue
+      message.to_s.blue
     ]
   end
 
+  def done_in(time, &block)
+    @done_in = time.from_now
+    @done_in_block = block
+  end
+
   def schedule(time, name, *args, &block)
+    unless block_given?
+      block = args.pop
+    end
+
     @queue[@event.new(name, block, args)] = time.from_now
   end
 
@@ -34,13 +44,17 @@ class Production
     debug(message)
   end
 
+  def current_time
+    Time.now
+  end
+
   private
 
   def execute!
     init
     loop do
+      execute_next_event
       action
-
       if done?
         debug("We're not done, bye!"); break
       end
@@ -49,7 +63,12 @@ class Production
         debug("No more events to execute, exiting"); break
       end
 
-      execute_next_event
+      if @done_in < current_time
+        if @done_in_block
+          @done_in_block.call
+        end
+        debug("Done according to done_in"); break
+      end
     end
   end
 
@@ -59,14 +78,19 @@ class Production
   end
 
   def action
-    raise "action method not implemented"
+    # debug("Action is not implemented")
   end
 
   def execute_next_event
     event, time = @queue.delete_min
     Timecop.freeze(time)
     debug("#{event.name}")
-    event.block.call(*event.arguments)
+    case event.block
+    when Symbol
+      send(event.block, *event.arguments)
+    else
+      event.block.call(*event.arguments)
+    end
   end
 
   def no_more_events?

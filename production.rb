@@ -28,12 +28,14 @@ class Production
     @done_in_block = block
   end
 
-  def schedule(time, name, *args, &block)
+  def schedule(time, name, *args, &callback)
     unless block_given?
-      block = args.shift
+      callback = args.shift
     end
 
-    @queue[@event.new(name, block, args)] = time.from_now
+    args << current_time
+
+    @queue[@event.new(name, callback, args)] = time.from_now
   end
 
   def done!
@@ -53,7 +55,6 @@ class Production
   def execute!
     init
     loop do
-      execute_next_event
       action
       if done?
         debug("We're now done, bye!"); break
@@ -63,12 +64,15 @@ class Production
         debug("No more events to execute, exiting"); break
       end
 
-      if @done_in < current_time
-        if @done_in_block
-          @done_in_block.call
-        end
+      if @done_in < current_time or @queue.min.last > @done_in
         debug("Done according to done_in"); break
       end
+
+      execute_next_event
+    end
+
+    if @done_in_block
+      @done_in_block.call
     end
   end
 
@@ -83,8 +87,14 @@ class Production
 
   def execute_next_event
     event, time = @queue.delete_min
+    
     Timecop.freeze(time)
+
     debug(event.name)
+
+    started_at = event.arguments.shift
+    event.arguments << (current_time - started_at).to_i
+
     case event.callback
     when Symbol
       send(event.callback, *event.arguments)

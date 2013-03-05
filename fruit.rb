@@ -2,43 +2,40 @@ require "./production"
 
 class Fruit < Production
   def init
-    @bufferCap = 1000
-    @bufferCur = 0
+    @buffer_capacity = 1000
+    @buffer = 0
     @time_buffer_empty = 0
-    @machine_1_started_at = current_time
-    schedule(new_lifetime, "Machine 1 is now broken", :machine_1_broken)
-    done_in(1.hour) do
-      debug("Time buffer is empty: #{@time_buffer_empty}")
+    schedule(new_lifetime, "Machine 1 is now broken", :machine_1_broken, current_time)
+    done_in(2.hours) do
+      debug("Time buffer empty: #{@time_buffer_empty}")
     end
   end
 
-  def machine_1_broken
-    time_passed = (current_time - @machine_1_started_at).to_i
+  def machine_1_broken(started_at)
+    time_passed = (current_time - started_at).to_i
     produced = 3 * time_passed
     reduced = - 2 * time_passed
-    if produced - reduced + @bufferCur < @bufferCap
-      @bufferCur +=  produced - reduced
+    if produced - reduced + @buffer < @buffer_capacity
+      @buffer +=  produced - reduced
       debug("New buffer value is #{@bufferCur}")
     else
-      @bufferCur = @bufferCap
+      @buffer = @buffer_capacity
       debug("Buffer is full #{@bufferCur}")
     end
 
-    @machine_1_broken_at = current_time
-    schedule(new_lifetime, "Machine 1 is now fixed", :machine_1_fixed)
+    schedule(new_lifetime, "Machine 1 is now fixed", :machine_1_fixed, current_time)
   end
 
-  def machine_1_fixed
-    @bufferCur = @bufferCur - 2 * (current_time - @machine_1_broken_at).to_i
-    if @bufferCur < 0
-      @time_buffer_empty += @bufferCur.abs
-      @bufferCur = 0
+  def machine_1_fixed(broken_at)
+    @buffer = @buffer - 2 * (current_time - broken_at).to_i
+    if @buffer < 0
+      @time_buffer_empty += @buffer.abs
+      @buffer = 0
     end
 
-    debug("Buffer counter is not #{@bufferCur}")
+    debug("Buffer counter is not #{@buffer}")
 
-    @machine_1_started_at = current_time
-    schedule(new_lifetime, "Machine 1 is now broken", :machine_1_broken)
+    schedule(new_lifetime, "Machine 1 is now broken", :machine_1_broken, current_time)
   end
 
   def new_lifetime

@@ -8,8 +8,8 @@ require "debugger"
 class Production
   def initialize
     @queue = PriorityQueue.new
-    @event = Struct.new(:name, :block, :arguments)
-    Timecop.freeze(Time.parse("2013-03-05 00:00"))
+    @event = Struct.new(:name, :callback, :arguments)
+    Timecop.freeze(Time.parse("00:00"))
     @done = false
     execute!
   end
@@ -30,7 +30,7 @@ class Production
 
   def schedule(time, name, *args, &block)
     unless block_given?
-      block = args.pop
+      block = args.shift
     end
 
     @queue[@event.new(name, block, args)] = time.from_now
@@ -56,7 +56,7 @@ class Production
       execute_next_event
       action
       if done?
-        debug("We're not done, bye!"); break
+        debug("We're now done, bye!"); break
       end
 
       if no_more_events?
@@ -84,12 +84,12 @@ class Production
   def execute_next_event
     event, time = @queue.delete_min
     Timecop.freeze(time)
-    debug("#{event.name}")
-    case event.block
+    debug(event.name)
+    case event.callback
     when Symbol
-      send(event.block, *event.arguments)
+      send(event.callback, *event.arguments)
     else
-      event.block.call(*event.arguments)
+      event.callback.call(*event.arguments)
     end
   end
 

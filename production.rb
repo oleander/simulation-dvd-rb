@@ -14,7 +14,7 @@ class Production
   end
 
   protected
-  
+
   def debug(message)
     $stdout.puts "[%s] %s" % [
       Time.now.strftime("%H:%M:%S").green, 
@@ -28,6 +28,10 @@ class Production
 
   def done!
     @done = true
+  end
+
+  def say(message)
+    debug(message)
   end
 
   private

@@ -1,5 +1,5 @@
 require "priority_queue"
-require "active_support/core_ext/integer"
+require "active_support/all"
 require "colorize"
 require "timecop"
 require "time"
@@ -8,8 +8,10 @@ require "debugger"
 class Production
   def initialize
     @queue = PriorityQueue.new
-    @event = Struct.new(:name, :callback, :arguments)
-    Timecop.freeze(Time.parse("00:00"))
+    @event = Struct.new(:name, :callback, :arguments, :seed)
+
+    @start_time = Time.parse("00:00")
+    Timecop.freeze(@start_time)
     @done = false
     execute!
   end
@@ -17,8 +19,14 @@ class Production
   protected
 
   def debug(message)
+    days_passed = ((current_time - @start_time) / (60 * 60 * 24)).to_i
+    time = "%s day%s %s".green % [
+      days_passed.to_s,
+      days_passed > 1 || days_passed.zero? ? "s" : "",
+      current_time.strftime("%H:%M:%S")
+    ]
     $stdout.puts "[%s] %s" % [
-      Time.now.strftime("%H:%M:%S").green, 
+      time,
       message.to_s.blue
     ]
   end
@@ -34,8 +42,7 @@ class Production
     end
 
     args << current_time
-
-    @queue[@event.new(name, callback, args)] = time.from_now
+    @queue[@event.new(name, callback, args, rand(1000))] = time.from_now
   end
 
   def done!
@@ -53,7 +60,7 @@ class Production
   private
 
   def execute!
-    init
+    setup
     loop do
       action
       if done?
@@ -77,7 +84,7 @@ class Production
   end
 
   # Abstract method
-  def init
+  def setup
     # debug("Init method not implemented")
   end
 

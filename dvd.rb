@@ -2,24 +2,44 @@ require "./production"
 
 class DVD < Production
   def setup
-    done_in(2 * 24.hours) do
+    # Macine 1: im
+    # Machine 2: dry
+    # Machine 3: sputt, coat
+    # Machine 4: print
+    @machines = {
+      im: 4,
+      dry: 2,
+      sputt: 2,
+      coat: 2,
+      print: 2
+    }
+
+    done_in(10.hours) do
       say("We're now done!")
     end
 
-    schedule(2.hours, "Machine 1 broken", :machine_1_broke)
+    @machines[:im].times do |id|
+      schedule(rand(10).minutes, "A machine is broken", :machine_broke)
+    end
   end
 
   # Called when wachine 1 is broken
-  def machine_1_broke(time_since_called)
+  def machine_broke(time_since_called)
     # Calculate when buffer b2 has 20 items in it
     schedule(0.minute, "Buffer 2 has now 20 items", :buffer_2_has_20_items)
-    schedule(5.minute, "Machine 1 is now fixed", :machine_1_is_fixed)
+    schedule(rand(10).minutes, "A machine is fixed", :machine_fixed)
+
+    # Mark one machine as broken
+    @machines[:im] -= 1
   end
 
   # Machine one is fixed
-  def machine_1_is_fixed(time_since_called)
-    schedule(2.hours, "Machine 1 broken", :machine_1_broke)
+  def machine_fixed(time_since_called)
+    schedule(rand(10).minutes, "A machine is broken", :machine_broke)
     schedule(0.minute, "Buffer 2 has now 20 items", :buffer_2_has_20_items)
+
+    # Mark one machine as fixed
+    @machines[:im] += 1
   end
 
   # 20 items now exists in buffer 2

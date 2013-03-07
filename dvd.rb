@@ -14,7 +14,7 @@ class DVD < Production
       print: 2
     }
 
-    done_in(10.hours) do
+    done_in(2.days) do
       say("We're now done!")
     end
 

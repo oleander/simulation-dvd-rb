@@ -7,7 +7,7 @@ class Fruit < Production
     @time_buffer_empty = 0
     schedule(new_lifetime, "Machine 1 is now broken", :machine_1_broken, "hello")
     done_in(100.hours) do
-      debug("Time buffer empty: #{@time_buffer_empty}")
+      debug("Time was buffer empty: #{@time_buffer_empty}", :red)
     end
   end
 

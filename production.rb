@@ -18,7 +18,7 @@ class Production
 
   protected
 
-  def debug(message)
+  def debug(message, color = :blue)
     days_passed = ((current_time - @start_time) / (60 * 60 * 24)).to_i
     time = "%s day%s %s".green % [
       days_passed.to_s,
@@ -27,7 +27,7 @@ class Production
     ]
     $stdout.puts "[%s] %s" % [
       time,
-      message.to_s.blue
+      message.to_s.send(color)
     ]
   end
 
@@ -94,7 +94,7 @@ class Production
     Timecop.freeze(time)
 
     debug(event.name)
-    
+
     started_at = event.arguments.pop
     event.arguments << (current_time - started_at).to_i
 

@@ -1,4 +1,4 @@
-require "priority_queue"
+require "pqueue"
 require "active_support/all"
 require "colorize"
 require "timecop"
@@ -7,8 +7,8 @@ require "debugger"
 
 class Production
   def initialize
-    @queue = PriorityQueue.new
-    @event = Struct.new(:name, :callback, :arguments, :seed)
+    @queue = PQueue.new { |a,b| a.time < b.time }
+    @event = Struct.new(:name, :callback, :arguments, :seed, :time)
 
     @start_time = Time.parse("00:00")
     Timecop.freeze(@start_time)
@@ -42,7 +42,7 @@ class Production
     end
 
     args << current_time
-    @queue[@event.new(name, callback, args, rand(1000))] = time.from_now
+    @queue.push(@event.new(name, callback, args, rand(1000), time.from_now))
   end
 
   def done!
@@ -71,7 +71,7 @@ class Production
         debug("No more events to execute, exiting"); break
       end
 
-      if @done_in < current_time or @queue.min.last > @done_in
+      if @done_in < current_time or @queue.top.time > @done_in
         debug("Done according to done_in"); break
       end
 
@@ -93,7 +93,8 @@ class Production
   end
 
   def execute_next_event
-    event, time = @queue.delete_min
+    event = @queue.pop
+    time = event.time
     
     Timecop.freeze(time)
 

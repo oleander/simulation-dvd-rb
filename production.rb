@@ -62,7 +62,6 @@ class Production
   def execute!
     setup
     loop do
-      action
       if done?
         debug("We're now done, bye!"); break
       end
@@ -85,11 +84,7 @@ class Production
 
   # Abstract method
   def setup
-    # debug("Init method not implemented")
-  end
-
-  def action
-    # debug("Action is not implemented")
+    debug("#setup not implemented")
   end
 
   def execute_next_event

@@ -26,7 +26,6 @@ class Fruit < Production
   end
 
   def machine_1_fixed(hi, time_passed)
-    puts "HI:::::: #{hi}"
     @buffer = @buffer - 2 * time_passed
     if @buffer < 0
       @time_buffer_empty += @buffer.abs

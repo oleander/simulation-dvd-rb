@@ -26,7 +26,7 @@ class DVD < Production
   # Called when wachine 1 is broken
   def machine_broke(time_since_called)
     # Calculate when buffer b2 has 20 items in it
-    schedule(0.minute, "Buffer 2 has now 20 items", :buffer_2_has_20_items)
+    # schedule(0.minute, "Buffer 2 has now 20 items", :buffer_2_has_20_items)
     schedule(rand(10).minutes, "A machine is fixed", :machine_fixed)
 
     # Mark one machine as broken
@@ -36,7 +36,7 @@ class DVD < Production
   # Machine one is fixed
   def machine_fixed(time_since_called)
     schedule(rand(10).minutes, "A machine is broken", :machine_broke)
-    schedule(0.minute, "Buffer 2 has now 20 items", :buffer_2_has_20_items)
+    # schedule(0.minute, "Buffer 2 has now 20 items", :buffer_2_has_20_items)
 
     # Mark one machine as fixed
     @machines[:im] += 1

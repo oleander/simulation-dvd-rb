@@ -94,8 +94,8 @@ class Production
     Timecop.freeze(time)
 
     debug(event.name)
-
-    started_at = event.arguments.shift
+    
+    started_at = event.arguments.pop
     event.arguments << (current_time - started_at).to_i
 
     case event.callback

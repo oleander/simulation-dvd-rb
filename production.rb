@@ -96,7 +96,7 @@ class Production
       # Should we group them?
       if next_time != current_event_time and current_event_time
         sleep @delay if @delay
-        puts "\n\n"
+        puts "\n"
       end
     end
 

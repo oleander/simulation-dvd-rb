@@ -14,8 +14,8 @@ class ThreeMachines < Production
     ]
 
     # Start first machine
-    @machines.first.times do
-      schedule(0.seconds, "Try to start machine 0", :try_to_start_machine, 0)
+    @machines.first.times do |n|
+      schedule(0.seconds, "Try to start machine 0", :try_to_start_machine, 0, n)
     end
 
     done_in 5.hours  do
@@ -29,28 +29,28 @@ class ThreeMachines < Production
     end
   end
 
-  def machine_done(machine, _)
-    say("Machine #{machine} is now done", :yellow)
+  def machine_done(machine_group, machine_id, _)
+    say("Machine #{machine_group} is now done", :yellow)
 
     # Add one created item to batch
-    finished!(machine)
+    finished!(machine_group)
 
     # Not last machine?
-    unless last_machine?(machine)
-      schedule(0.seconds, "Trying to start machine #{machine + 1}", :try_to_start_machine, machine + 1)
+    unless last_machine?(machine_group)
+      schedule(0.seconds, "Trying to start machine #{machine_group + 1}", :try_to_start_machine, machine_group + 1, machine_id)
     end
 
-    schedule(0.seconds, "Trying to start machine #{machine}", :try_to_start_machine, machine)
+    schedule(0.seconds, "Trying to start machine #{machine_group}", :try_to_start_machine, machine_group, machine_id)
   end
 
-  def try_to_start_machine(machine, _)
+  def try_to_start_machine(machine_group, machine_id, _)
     # Buffer 1 is not full
-    if can_produce?(machine)
-      say("Start machine #{machine}")
-      start!(machine) # Start machine and decrement buffer with one
-      schedule(@process_times[machine], "Machine #{machine} done", :machine_done, machine)
+    if can_produce?(machine_group)
+      say("Start machine #{machine_group}")
+      start!(machine_group) # Start machine and decrement buffer with one
+      schedule(@process_times[machine_group], "Machine #{machine_group} done", :machine_done, machine_group, machine_id)
     else
-      say("Could not start machine #{machine}", :red)
+      say("Could not start machine #{machine_group}", :red)
     end
   end
 

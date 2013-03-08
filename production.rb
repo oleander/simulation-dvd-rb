@@ -68,6 +68,9 @@ class Production
 
   def execute!
     setup
+
+    next_time = nil
+
     loop do
       if done?
         debug("We're now done, bye!"); break
@@ -77,15 +80,24 @@ class Production
         debug("No more events to execute, exiting"); break
       end
 
-      if @done_in < current_time or @queue.top.time > @done_in
+      if @done_in < current_time or next_sched_time > @done_in
         debug("Done according to done_in"); break
       end
 
+      # Execute next event
       execute_next_event
-      
+
       @every_time.call if @every_time
 
-      sleep @delay if @delay
+      # Did this event have the same time as the last one?
+      current_event_time = next_time
+      next_time = next_sched_time
+
+      # Should we group them?
+      if next_time != current_event_time and current_event_time
+        sleep @delay if @delay
+        puts "\n\n"
+      end
     end
 
     if @done_in_block
@@ -123,5 +135,10 @@ class Production
 
   def done?
     @done
+  end
+
+  def next_sched_time
+    event = @queue.top
+    event ? event.time : -1
   end
 end

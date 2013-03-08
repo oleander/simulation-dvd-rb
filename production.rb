@@ -13,6 +13,7 @@ class Production
     @start_time = Time.parse("00:00")
     Timecop.freeze(@start_time)
     @done = false
+    @delay = nil
     execute!
   end
 
@@ -36,6 +37,10 @@ class Production
     @done_in_block = block
   end
 
+  def delay(seconds)
+    @delay = seconds
+  end
+
   def schedule(time, name, *args, &callback)
     unless block_given?
       callback = args.shift
@@ -49,12 +54,14 @@ class Production
     @done = true
   end
 
-  def say(message)
-    debug(message)
-  end
+  alias_method :say, :debug
 
   def current_time
     Time.now
+  end
+
+  def every_time(&block)
+    @every_time = block
   end
 
   private
@@ -75,6 +82,10 @@ class Production
       end
 
       execute_next_event
+      
+      @every_time.call if @every_time
+
+      sleep @delay if @delay
     end
 
     if @done_in_block

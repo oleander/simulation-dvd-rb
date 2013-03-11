@@ -42,42 +42,43 @@ class Machine < Struct.new(:id, :group, :buffer)
   end
 end
 
-class Buffer < Struct.new(:size, :current, :id)
+class Buffer
+  def initialize(size, id)
+    @size, @id, @current = size, id, 0
+  end
+
   def increment!
-    current ||= 0
     if full?
       raise Error.new("Can't increment full buffer")
     end
 
-    current = current + 1
+    @current += 1
   end
 
   def decrement!
-    current ||= 0
-
     if empty?
       raise Error.new("Can't decrement empty buffer")
     end
 
-    current -= 1
+    @current += 1
   end
 
   #
   # @return Boolean Is buffer empty?
   #
   def empty?
-    return current.zero?
+    return @current.zero?
   end
 
   #
   # @return Boolean Is buffer full?
   #
   def full?
-    return current == size
+    return @current == @size
   end
 
   def to_s
-    "Id: #{id}, current: #{current}, size: #{size}"
+    "Id: #{@id}, current: #{@current}, size: #{@size}"
   end
 
   def inspect
@@ -163,7 +164,7 @@ class ThreeMachines < Production
     ]
 
     buffers = max_buffers.each_with_index.map do |max_size, index|
-      Buffer.new(max_size, 0, index)
+      Buffer.new(max_size, index)
     end
 
     machines_groups = []
@@ -199,7 +200,7 @@ class ThreeMachines < Production
       say(buffers.to_s)
     end
 
-    # delay(5.second)
+    delay(0.second)
   end
 
   def try_to_start_machine_group(machine_group, time_diff)
@@ -227,8 +228,6 @@ class ThreeMachines < Production
 
     # Mark machine as idle
     machine.idle!
-
-    say("Machine #{machine} is now done", :yellow)
 
     schedule(0, "Trying to start machine group #{machine.group}", :try_to_start_machine_group, machine.group)
   end

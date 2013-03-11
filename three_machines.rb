@@ -230,6 +230,12 @@ class ThreeMachines < Production
       schedule(0.seconds, "Try to start machine group #{machine.group}", :try_to_start_machine_group, machine.group)
     end
 
+    [machines_groups.first, machines_groups.last].each do |group| 
+      group.machines.each do |machine|
+        schedule(0.seconds, "Initialize broke sequence for #{machine.group}", :machine_fixed, machine)
+      end
+    end
+
     done_in 2.minutes  do
       say(buffers.map(&:current).to_s, :red)
     end
@@ -287,6 +293,22 @@ class ThreeMachines < Production
     if n_machine_group = machine.group.n_machine_group
       schedule(0, "Notify next machine (#{n_machine_group}) about new item", :try_to_start_machine_group, n_machine_group)
     end
+  end
+
+  def machine_broken(machine, _)
+    machine.break!
+    schedule(1.minutes, "Machine #{machine} is now fixed", :machine_fixed, machine)
+  end
+
+  def machine_fixed(machine, _)
+    if machine.broken?
+      machine.fix!
+    else
+      say("Strange, machine #{machine} is not broken, first run?", :red)
+    end
+    
+    schedule(0, "Trying to start #{machine} after breakdown", :try_to_start_machine_group, machine.group)
+    schedule(20.seconds, "Machine #{machine} just broke down, darn!", :machine_broken, machine)
   end
 end
 

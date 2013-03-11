@@ -128,22 +128,29 @@ class MachineGroup < Struct.new(:machines, :id, :process_time, :p_buffer, :n_buf
   # 2. Previous buffer can't be empty
   # 3. Next buffer can't be full
   def can_produce?
+    result = Struct.new(:status, :errors)
+    errors = []
+    status = true
+
     # 1.
     if avalible_machines.empty?
-      return false
+      status = false
+      errors << "no machines avalible"
     end
     
     # 2.
     if p_buffer and p_buffer.empty?
-      return false
+      status = false
+      errors << "previous buffer is empty"
     end
 
     # 3.
     if n_buffer.full_including_reserved?
-      return false
+      status = false
+      errors << "next buffer is full"
     end
 
-    return true
+    result.new(status, errors)
   end
 
   def adjust_buffer!(where)
@@ -153,7 +160,7 @@ class MachineGroup < Struct.new(:machines, :id, :process_time, :p_buffer, :n_buf
     when :previous
       p_buffer && p_buffer.decrement!
     else
-      raise InvalidArgumentError.new("Invalid where value: #{where}")
+      raise InvalidArgumentError.new("Invalid 'where' value: #{where}")
     end
   end
 
@@ -223,36 +230,40 @@ class ThreeMachines < Production
       schedule(0.seconds, "Try to start machine group #{machine.group}", :try_to_start_machine_group, machine.group)
     end
 
-    done_in 10.minutes  do
+    done_in 2.minutes  do
       say(buffers.map(&:current).to_s, :red)
     end
 
     every_time do
-      # say(buffers.map(&:current).to_s, :red)
+      say(buffers.map(&:current).to_s, :yellow)
     end
 
     # delay(5.second)
   end
 
   def try_to_start_machine_group(machine_group, time_diff)
-    if machine_group.can_produce?
-      # Mark machine as started
-      machine =  machine_group.avalible_machines.first
+    result = machine_group.can_produce?
 
-      # Decrement previous buffer (we're taking one item)
-      machine_group.adjust_buffer!(:previous)
+    unless result.status
+      return say("Could not start #{machine_group} due to #{result.errors.join(", ")}", :red)
+    end
+    
+    # Mark machine as started
+    machine = machine_group.avalible_machines.first
 
-      machine_group.n_buffer.reserve
+    # Decrement previous buffer (we're taking one item)
+    machine_group.adjust_buffer!(:previous)
 
-      machine.start!
+    machine_group.n_buffer.reserve
 
-      # Schedule finished machine
-      schedule(machine_group.process_time, "Machine #{machine} is done", :machine_done, machine)
+    machine.start!
 
-      # Tell previous machine to start
-      if p_machine_group = machine_group.p_machine_group
-        schedule(0.seconds, "Try to start machine group #{p_machine_group}", :try_to_start_machine_group, p_machine_group)
-      end
+    # Schedule finished machine
+    schedule(machine_group.process_time, "Machine #{machine} is done", :machine_done, machine)
+
+    # Tell previous machine to start
+    if p_machine_group = machine_group.p_machine_group
+      schedule(0.seconds, "Try to start machine group #{p_machine_group}", :try_to_start_machine_group, p_machine_group)
     end
   end
 

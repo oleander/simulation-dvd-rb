@@ -72,6 +72,15 @@ class Production
     next_time = nil
 
     loop do
+      # Execute next event
+      execute_next_event
+
+      @every_time.call if @every_time
+
+      # Did this event have the same time as the last one?
+      current_event_time = next_time
+      next_time = next_sched_time
+
       if done?
         debug("We're now done, bye!"); break
       end
@@ -83,15 +92,6 @@ class Production
       if @done_in < current_time or next_sched_time > @done_in
         debug("Done according to done_in"); break
       end
-
-      # Execute next event
-      execute_next_event
-
-      @every_time.call if @every_time
-
-      # Did this event have the same time as the last one?
-      current_event_time = next_time
-      next_time = next_sched_time
 
       # Should we group them?
       if next_time != current_event_time and current_event_time

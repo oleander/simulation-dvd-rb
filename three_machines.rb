@@ -1,169 +1,236 @@
 require "./production"
+require "state_machine"
+require "debugger"
+
+class Machine < Struct.new(:id, :group, :buffer)
+  state_machine :state, initial: :idle do
+    event :start do
+      transition [:idle, :break] => :start
+    end
+
+    event :break do
+      transition [:start] => :break
+    end
+
+    event :idle do
+      transition [:break, :start] => :idle
+    end
+
+    event :fix do
+      transition [:break] => :idle
+    end
+  end
+
+  def process_time
+    group.process_time
+  end
+
+  def broken?
+    break?
+  end
+
+  def say(message, color = :red)
+    puts "Machine #{group_id}.#{id}: #{message}".send(color)
+  end
+
+  def to_s
+    name
+  end
+
+  def name
+    "#{group.id}.#{id}"
+  end
+end
+
+class Buffer < Struct.new(:size, :current, :id)
+  def increment!
+    current ||= 0
+    if full?
+      raise Error.new("Can't increment full buffer")
+    end
+
+    current = current + 1
+  end
+
+  def decrement!
+    current ||= 0
+
+    if empty?
+      raise Error.new("Can't decrement empty buffer")
+    end
+
+    current -= 1
+  end
+
+  #
+  # @return Boolean Is buffer empty?
+  #
+  def empty?
+    return current.zero?
+  end
+
+  #
+  # @return Boolean Is buffer full?
+  #
+  def full?
+    return current == size
+  end
+
+  def to_s
+    "Id: #{id}, current: #{current}, size: #{size}"
+  end
+
+  def inspect
+    to_s
+  end
+end
+
+class MachineGroup < Struct.new(:machines, :id, :process_time, :p_buffer, :n_buffer)
+  #
+  # @machine Machine Adds machine to group
+  #
+  def add(machine)
+    machines.push(machine)
+  end
+
+  #
+  # @return Array<Machine> A list of avalible machines
+  #
+  def avalible_machines
+    machines.select(&:idle?)
+  end
+
+  #
+  # @return Boolean Can this machine group price any items?
+  #
+
+  # 1. Must have at least one avalible machine
+  # 2. Previous buffer can't be empty
+  # 3. Next buffer can't be full
+  def can_produce?
+    # 1.
+    if avalible_machines.empty?
+      return false
+    end
+    
+    # 2.
+    if p_buffer and p_buffer.empty?
+      return false
+    end
+
+    # 3.
+    if n_buffer.full?
+      return false
+    end
+
+    return true
+  end
+
+  def adjust_buffer!(where)
+    case where
+    when :next
+      n_buffer.increment!
+    when :previous
+      p_buffer && p_buffer.decrement!
+    else
+      raise InvalidArgumentError.new("Invalid where value: #{where}")
+    end
+  end
+
+  def to_s
+    id.to_s
+  end
+
+  def inspect
+    to_s
+  end
+end
 
 class ThreeMachines < Production
   Infinity = 1/0.0
 
   def setup
-    @original_machines = @machines = [10, 1, 3] 
-    @buffers = [0, 0, 0]
-    @max_buffers = [30, 15, Infinity]
-    @process_times = [
+    max_buffers = [30, 15, Infinity]
+    process_times = [
       60.seconds, 
       2.seconds,
       41.seconds
     ]
+    machines = [
+      10, 
+      1, 
+      3
+    ]
+
+    buffers = max_buffers.each_with_index.map do |max_size, index|
+      Buffer.new(max_size, 0, index)
+    end
+
+    machines_groups = []
+    machines.each_with_index.map do |amount_of_machines, group_id|
+      # First machine?
+      if group_id.zero?
+        p_b = nil
+        n_b = buffers.first
+      else
+        p_b = buffers[group_id - 1]
+        n_b = buffers[group_id]
+      end
+
+      process_time = process_times[group_id]
+      group = MachineGroup.new([], group_id, process_time, p_b, n_b)
+      amount_of_machines.times do |machine_id|
+        group.add(Machine.new(machine_id, group))
+      end
+
+      machines_groups << group
+    end
 
     # Start first machine
-    @machines.first.times do |n|
-      schedule(0.seconds, "Try to start machine 0.#{n}", :try_to_start_machine, 0, n)
+    machines_groups.each do |machine_group|
+      schedule(0.seconds, "Try to start machine group #{machine_group}", :try_to_start_machine_group, machine_group)
     end
 
     done_in 5.hours  do
-      say(@buffers.inspect, :red)
+      say("We're now done!")
     end
-
-    delay(5.second)
 
     every_time do
-      say(@buffers.inspect, :green)
+      say(buffers.to_s)
+    end
+
+    # delay(5.second)
+  end
+
+  def try_to_start_machine_group(machine_group, time_diff)
+    if machine_group.can_produce?
+      # Mark machine as started
+      machine =  machine_group.avalible_machines.first
+
+      # Decrement previous buffer (we're taking one item)
+      machine_group.adjust_buffer!(:previous)
+
+      machine.start!
+
+      # Schedule finished machine
+      schedule(machine_group.process_time, "Machine #{machine} is done", :machine_done, machine)
     end
   end
 
-  def machine_done(machine_group, machine_id, _)
-    say("Machine #{machine_group}.#{machine_id} is now done", :yellow)
-
-    message = "Trying to start machine %d.%d"
-
-    # Add one created item to batch
-    finished!(machine_group)
-
-    # Not last machine?
-    unless last_machine?(machine_group)
-      schedule(
-        0.seconds, 
-        message % [machine_group + 1 , machine_id],
-        :try_to_start_machine, 
-        machine_group + 1, 
-        machine_id
-      )
+  def machine_done(machine, _)
+    if machine.broken?
+      return say("Ooops, machine #{machine} was broken before finished")
     end
 
-    schedule(
-      0.seconds, 
-      message % [machine_group , machine_id],
-      :try_to_start_machine, 
-      machine_group, 
-      machine_id
-    )
-  end
+    # Machine is not broken, increment next buffer
+    machine.group.adjust_buffer!(:next)
 
-  def try_to_start_machine(machine_group, machine_id, _)
-    # Buffer 1 is not full
-    if can_produce?(machine_group)
-      say("Start machine #{machine_group}.#{machine_id}")
-      start!(machine_group) # Start machine and decrement buffer with one
-      schedule(
-        @process_times[machine_group], 
-        "Machine #{machine_group}.#{machine_id} done", 
-        :machine_done, 
-        machine_group, 
-        machine_id
-      )
-    else
-      say("Could not start machine #{machine_group}.#{machine_id}", :red)
-    end
-  end
+    # Mark machine as idle
+    machine.idle!
 
-  #
-  # @machine Integer
-  #
-  def last_machine?(machine)
-    @machines.length == machine + 1
-  end
+    say("Machine #{machine} is now done", :yellow)
 
-  #
-  # @machine Integer 
-  #
-  def can_produce?(machine)
-    # Is this the first buffer?
-    if machine.zero?
-      prev = true
-    else
-      prev = @buffers[machine - 1] > 0
-    end
-
-    buffers_ok = [
-      prev, # Prev. buffer can not be empty
-      @buffers[machine] < @max_buffers[machine] # Next buffer not be full
-    ].all?
-
-    return (buffers_ok and avalible?(machine))
-  end
-
-  def start!(machine)
-    unless can_produce?(machine)
-      raise "machine can't produce anything"
-    end
-
-    # Mark one machine as taken
-    reserve!(machine)
-
-    # Decrement prev. buffer with one
-    # First machine does not have a buffer
-    unless machine.zero?
-      take_from_buffer!(machine)
-    end
-  end
-
-  def finished!(machine)
-    # Increment next buffer by one
-    add_to_buffer(machine)
-
-    # Mark machine as done
-    unreserve!(machine)
-  end
-
-  def add_to_buffer(machine)
-    if @buffers[machine] > @max_buffers[machine]
-      raise "Buffer #{machine} is full"
-    end
-
-    @buffers[machine] += 1
-  end
-
-  def take_from_buffer!(machine)
-    index = machine - 1
-    if @buffers[index].zero?
-      raise "Buffer #{index} is empty"
-    end
-
-    @buffers[index] -= 1
-  end
-
-  #
-  # @machine Integer
-  #
-  def reserve!(machine)
-    unless avalible?(machine)
-      raise "There are no more #{machine} machines"
-    end
-
-    @machines[machine] -= 1
-  end
-
-  def unreserve!(machine)
-    if @original_machines[machine] < @machines[machine]
-      raise "Machine #{machine} has never been reserved"
-    end
-
-    @machines[machine] += 1
-  end
-
-  #
-  # @machine Integer
-  #
-  def avalible?(machine)
-    ! @machines[machine].zero?
+    schedule(0, "Trying to start machine group #{machine.group}", :try_to_start_machine_group, machine.group)
   end
 end
 

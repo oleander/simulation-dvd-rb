@@ -263,7 +263,7 @@ class ThreeMachines < Production
 
     # Tell previous machine to start
     if p_machine_group = machine_group.p_machine_group
-      schedule(0.seconds, "Try to start machine group #{p_machine_group}", :try_to_start_machine_group, p_machine_group)
+      schedule(0, "Notify previous machine (#{p_machine_group}) about item removed from buffer", :try_to_start_machine_group, p_machine_group)
     end
   end
 
@@ -281,11 +281,11 @@ class ThreeMachines < Production
     machine.idle!
 
     # Restart the machine?
-    schedule(0, "Trying to start machine group #{machine.group}", :try_to_start_machine_group, machine.group)
+    schedule(0, "Trying to restart #{machine.group}", :try_to_start_machine_group, machine.group)
 
     # Does the machine group has a next machine?
     if n_machine_group = machine.group.n_machine_group
-      schedule(0, "Trying to start machine group #{n_machine_group}", :try_to_start_machine_group, n_machine_group)
+      schedule(0, "Notify next machine (#{n_machine_group}) about new item", :try_to_start_machine_group, n_machine_group)
     end
   end
 end

@@ -43,13 +43,15 @@ class Machine < Struct.new(:id, :group, :buffer)
 end
 
 class Buffer
+  attr_reader :current, :size, :id
+
   def initialize(size, id)
     @size, @id, @current = size, id, 0
   end
 
   def increment!
     if full?
-      raise Error.new("Can't increment full buffer")
+      raise ArgumentError.new("Can't increment full buffer")
     end
 
     @current += 1
@@ -57,10 +59,10 @@ class Buffer
 
   def decrement!
     if empty?
-      raise Error.new("Can't decrement empty buffer")
+      raise ArgumentError.new("Can't decrement empty buffer")
     end
 
-    @current += 1
+    @current -= 1
   end
 
   #
@@ -74,7 +76,7 @@ class Buffer
   # @return Boolean Is buffer full?
   #
   def full?
-    return @current == @size
+    return @current >= @size
   end
 
   def to_s
@@ -87,6 +89,8 @@ class Buffer
 end
 
 class MachineGroup < Struct.new(:machines, :id, :process_time, :p_buffer, :n_buffer)
+  attr_accessor :n_machine_group, :p_machine_group
+
   #
   # @machine Machine Adds machine to group
   #
@@ -151,7 +155,7 @@ class ThreeMachines < Production
   Infinity = 1/0.0
 
   def setup
-    max_buffers = [30, 15, Infinity]
+    max_buffers = [5, 15, Infinity]
     process_times = [
       60.seconds, 
       2.seconds,
@@ -187,6 +191,18 @@ class ThreeMachines < Production
       machines_groups << group
     end
 
+    machines_groups.each_with_index do |machines_group, index|
+      # First machine?
+      if index.zero?
+        machines_group.n_machine_group = machines_groups[index + 1]
+      elsif machines_groups.length - 1 == index # Last machine
+        machines_group.p_machine_group = machines_groups[index - 1]
+      else # In between
+        machines_group.n_machine_group = machines_groups[index + 1]
+        machines_group.p_machine_group = machines_groups[index - 1]
+      end
+    end
+
     # Start first machine
     machines_groups.each do |machine_group|
       schedule(0.seconds, "Try to start machine group #{machine_group}", :try_to_start_machine_group, machine_group)
@@ -197,7 +213,11 @@ class ThreeMachines < Production
     end
 
     every_time do
-      say(buffers.to_s)
+      a = buffers.map do |buffer|
+        "#{buffer.id}:#{buffer.current}:#{buffer.size}"
+      end.join(" - ")
+
+      say(a, :red)
     end
 
     delay(0.second)
@@ -215,6 +235,11 @@ class ThreeMachines < Production
 
       # Schedule finished machine
       schedule(machine_group.process_time, "Machine #{machine} is done", :machine_done, machine)
+
+      # Tell previous machine to start
+      if p_machine_group = machine_group.p_machine_group
+        schedule(0.seconds, "Try to start machine group #{p_machine_group}", :try_to_start_machine_group, p_machine_group)
+      end
     end
   end
 
@@ -229,7 +254,13 @@ class ThreeMachines < Production
     # Mark machine as idle
     machine.idle!
 
+    # Restart the machine?
     schedule(0, "Trying to start machine group #{machine.group}", :try_to_start_machine_group, machine.group)
+
+    # Does the machine group has a next machine?
+    if n_machine_group = machine.group.n_machine_group
+      schedule(0, "Trying to start machine group #{n_machine_group}", :try_to_start_machine_group, n_machine_group)
+    end
   end
 end
 

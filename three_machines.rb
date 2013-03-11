@@ -46,12 +46,15 @@ class Buffer
   attr_reader :current, :size, :id
 
   def initialize(size, id)
-    @size, @id, @current = size, id, 0
+    @id      = id
+    @size    = size
+    @reserve = 0
+    @current =  0
   end
 
   def increment!
     if full?
-      raise ArgumentError.new("Can't increment full buffer")
+      raise ArgumentError.new("Can't increment full buffer #{id}")
     end
 
     @current += 1
@@ -59,7 +62,7 @@ class Buffer
 
   def decrement!
     if empty?
-      raise ArgumentError.new("Can't decrement empty buffer")
+      raise ArgumentError.new("Can't decrement empty buffer #{id}")
     end
 
     @current -= 1
@@ -79,8 +82,20 @@ class Buffer
     return @current >= @size
   end
 
+  def full_including_reserved?
+    @current + @reserve == size
+  end
+
+  def unreserve
+    @reserve -= 1
+  end
+
+  def reserve
+    @reserve += 1
+  end
+
   def to_s
-    "Id: #{@id}, current: #{@current}, size: #{@size}"
+    "<Buffer id: #{@id}, current: #{@current}, size: #{@size}>"
   end
 
   def inspect
@@ -124,7 +139,7 @@ class MachineGroup < Struct.new(:machines, :id, :process_time, :p_buffer, :n_buf
     end
 
     # 3.
-    if n_buffer.full?
+    if n_buffer.full_including_reserved?
       return false
     end
 
@@ -155,16 +170,16 @@ class ThreeMachines < Production
   Infinity = 1/0.0
 
   def setup
-    max_buffers = [5, 15, Infinity]
+    max_buffers = [5, 5, Infinity]
     process_times = [
-      60.seconds, 
-      2.seconds,
-      41.seconds
+      10.seconds, 
+      5.seconds,
+      10.seconds
     ]
     machines = [
-      10, 
-      1, 
-      3
+      2, 
+      2, 
+      2
     ]
 
     buffers = max_buffers.each_with_index.map do |max_size, index|
@@ -204,23 +219,19 @@ class ThreeMachines < Production
     end
 
     # Start first machine
-    machines_groups.each do |machine_group|
-      schedule(0.seconds, "Try to start machine group #{machine_group}", :try_to_start_machine_group, machine_group)
+    machines_groups.first.machines.each do |machine|
+      schedule(0.seconds, "Try to start machine group #{machine.group}", :try_to_start_machine_group, machine.group)
     end
 
-    done_in 5.hours  do
-      say("We're now done!")
+    done_in 10.minutes  do
+      say(buffers.map(&:current).to_s, :red)
     end
 
     every_time do
-      a = buffers.map do |buffer|
-        "#{buffer.id}:#{buffer.current}:#{buffer.size}"
-      end.join(" - ")
-
-      say(a, :red)
+      # say(buffers.map(&:current).to_s, :red)
     end
 
-    delay(0.second)
+    # delay(5.second)
   end
 
   def try_to_start_machine_group(machine_group, time_diff)
@@ -230,6 +241,8 @@ class ThreeMachines < Production
 
       # Decrement previous buffer (we're taking one item)
       machine_group.adjust_buffer!(:previous)
+
+      machine_group.n_buffer.reserve
 
       machine.start!
 
@@ -244,6 +257,8 @@ class ThreeMachines < Production
   end
 
   def machine_done(machine, _)
+    machine.group.n_buffer.unreserve
+
     if machine.broken?
       return say("Ooops, machine #{machine} was broken before finished")
     end

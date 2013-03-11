@@ -108,7 +108,11 @@ class ThreeMachines < Production
   def machine_done(machine, _)
     machine.group.n_buffer.unreserve
 
-    if machine.broken?
+    # Abort if:
+    #   machine currently broken?
+    #   machine is idle, a.k.a is has been broken but now fixed
+    # TODO: Add nicer method to check if machine has been broken?
+    if machine.broken? or machine.idle?
       return say("Ooops, machine #{machine} was broken before finished")
     end
 

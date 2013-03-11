@@ -1,177 +1,9 @@
 require "./production"
 require "state_machine"
 require "debugger"
-
-class Machine < Struct.new(:id, :group, :buffer)
-  state_machine :state, initial: :idle do
-    event :start do
-      transition [:idle, :break] => :start
-    end
-
-    event :break do
-      transition [:start] => :break
-    end
-
-    event :idle do
-      transition [:break, :start] => :idle
-    end
-
-    event :fix do
-      transition [:break] => :idle
-    end
-  end
-
-  def process_time
-    group.process_time
-  end
-
-  def broken?
-    break?
-  end
-
-  def say(message, color = :red)
-    puts "Machine #{group_id}.#{id}: #{message}".send(color)
-  end
-
-  def to_s
-    name
-  end
-
-  def name
-    "#{group.id}.#{id}"
-  end
-end
-
-class Buffer
-  attr_reader :current, :size, :id
-
-  def initialize(size, id)
-    @id      = id
-    @size    = size
-    @reserve = 0
-    @current =  0
-  end
-
-  def increment!
-    if full?
-      raise ArgumentError.new("Can't increment full buffer #{id}")
-    end
-
-    @current += 1
-  end
-
-  def decrement!
-    if empty?
-      raise ArgumentError.new("Can't decrement empty buffer #{id}")
-    end
-
-    @current -= 1
-  end
-
-  #
-  # @return Boolean Is buffer empty?
-  #
-  def empty?
-    return @current.zero?
-  end
-
-  #
-  # @return Boolean Is buffer full?
-  #
-  def full?
-    return @current >= @size
-  end
-
-  def full_including_reserved?
-    @current + @reserve == size
-  end
-
-  def unreserve
-    @reserve -= 1
-  end
-
-  def reserve
-    @reserve += 1
-  end
-
-  def to_s
-    "<Buffer id: #{@id}, current: #{@current}, size: #{@size}>"
-  end
-
-  def inspect
-    to_s
-  end
-end
-
-class MachineGroup < Struct.new(:machines, :id, :process_time, :p_buffer, :n_buffer)
-  attr_accessor :n_machine_group, :p_machine_group
-
-  #
-  # @machine Machine Adds machine to group
-  #
-  def add(machine)
-    machines.push(machine)
-  end
-
-  #
-  # @return Array<Machine> A list of avalible machines
-  #
-  def avalible_machines
-    machines.select(&:idle?)
-  end
-
-  #
-  # @return Boolean Can this machine group price any items?
-  #
-
-  # 1. Must have at least one avalible machine
-  # 2. Previous buffer can't be empty
-  # 3. Next buffer can't be full
-  def can_produce?
-    result = Struct.new(:status, :errors)
-    errors = []
-    status = true
-
-    # 1.
-    if avalible_machines.empty?
-      status = false
-      errors << "no machines avalible"
-    end
-    
-    # 2.
-    if p_buffer and p_buffer.empty?
-      status = false
-      errors << "previous buffer is empty"
-    end
-
-    # 3.
-    if n_buffer.full_including_reserved?
-      status = false
-      errors << "next buffer is full"
-    end
-
-    result.new(status, errors)
-  end
-
-  def adjust_buffer!(where)
-    case where
-    when :next
-      n_buffer.increment!
-    when :previous
-      p_buffer && p_buffer.decrement!
-    else
-      raise InvalidArgumentError.new("Invalid 'where' value: #{where}")
-    end
-  end
-
-  def to_s
-    id.to_s
-  end
-
-  def inspect
-    to_s
-  end
-end
+require "./machine"
+require "./buffer"
+require "./machine_group"
 
 class ThreeMachines < Production
   Infinity = 1/0.0
@@ -236,7 +68,7 @@ class ThreeMachines < Production
       end
     end
 
-    done_in 2.minutes  do
+    done_in 30.minutes  do
       say(buffers.map(&:current).to_s, :red)
     end
 
@@ -297,7 +129,7 @@ class ThreeMachines < Production
 
   def machine_broken(machine, _)
     machine.break!
-    schedule(1.minutes, "Machine #{machine} is now fixed", :machine_fixed, machine)
+    schedule(20.seconds, "Machine #{machine} is now fixed", :machine_fixed, machine)
   end
 
   def machine_fixed(machine, _)
@@ -308,7 +140,7 @@ class ThreeMachines < Production
     end
     
     schedule(0, "Trying to start #{machine} after breakdown", :try_to_start_machine_group, machine.group)
-    schedule(20.seconds, "Machine #{machine} just broke down, darn!", :machine_broken, machine)
+    schedule(5.minutes, "Machine #{machine} just broke down, darn!", :machine_broken, machine)
   end
 end
 

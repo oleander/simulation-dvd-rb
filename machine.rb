@@ -5,7 +5,7 @@ class Machine < Struct.new(:id, :group, :buffer)
     end
 
     event :break do
-      transition [:start] => :break
+      transition [:start, :idle] => :break
     end
 
     event :idle do

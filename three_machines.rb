@@ -9,16 +9,16 @@ class ThreeMachines < Production
   Infinity = 1/0.0
 
   def setup
-    max_buffers = [5, 5, Infinity]
+    max_buffers = [5, 100, Infinity]
     process_times = [
-      10.seconds, 
+      55.seconds, 
       5.seconds,
-      10.seconds
+      2.seconds
     ]
     machines = [
-      2, 
-      2, 
-      2
+      10, 
+      53, 
+      4
     ]
 
     buffers = max_buffers.each_with_index.map do |max_size, index|
@@ -68,7 +68,7 @@ class ThreeMachines < Production
       end
     end
 
-    done_in 30.minutes  do
+    done_in 1.day  do
       say(buffers.map(&:current).to_s, :red)
     end
 
@@ -76,7 +76,7 @@ class ThreeMachines < Production
       say(buffers.map(&:current).to_s, :yellow)
     end
 
-    # delay(5.second)
+    # delay(0.second)
   end
 
   def try_to_start_machine_group(machine_group, time_diff)

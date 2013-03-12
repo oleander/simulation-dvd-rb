@@ -1,4 +1,4 @@
-class Machine < Struct.new(:id, :group, :buffer)
+class Machine < Struct.new(:id, :group)
   state_machine :state, initial: :idle do
     event :start do
       transition [:idle, :break] => :start

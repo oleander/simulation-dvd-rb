@@ -104,6 +104,7 @@ class DVD < Production
 
     # Notify previous machine group about us
     injection_molding_machine_group.n_machine_group = dye_coating_machine_group
+    dye_coating_machine_group.p_machine_group = injection_molding_machine_group
 
     dye_coating_machines = machines[:dye].times.map do |id|
       DyeCoatingMachine.new(id, dye_coating_machine_group)
@@ -263,12 +264,37 @@ class DVD < Production
     # -> machine_2_done
     # --> start_machine_1
     def start_machine_2(machine_group, _)
+      result = machine_group.can_produce?
+
+      unless result.status
+        return say("Could not start #{machine_group} due to #{result.errors.join(", ")}", :red)
+      end
       
+      # Mark machine as started
+      machine = machine_group.avalible_machines.first
+
+      # Decrement previous buffer (we're taking one item)
+      machine_group.p_buffer.decrement!
+
+      machine_group.n_buffer.reserve
+
+      machine.start!
+
+      # Schedule finished machine
+      schedule(machine_group.process_time, "Machine #{machine} is done", :machine_2_done, machine)
+
+      # Tell the injection molding machine group to start
+      if injection_molding_machine_group = machine_group.p_machine_group
+        schedule(0, "Notify previous machine (#{injection_molding_machine_group}) about item removed from buffer", :start_machine_1, injection_molding_machine_group)
+      else
+        # TODO: Remove, only for debug purposes
+        raise ArgumentError.new("Why don't 2 have a previous machine?")
+      end
     end
 
     # --> start_machine_2
     # -> machine_2_conveyor_belt
-    def machine_2_done(_)
+    def machine_2_done(machine, _)
       
     end
 

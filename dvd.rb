@@ -380,34 +380,41 @@ class DVD < Production
         raise ArgumentError.new("Why don't 3 have a previous machine?")
       end
 
-      schedule(10.minutes, "Sputtering macine #{machine} done", :sputtering_machine_done, machine)
+      schedule(10.minutes, "Sputtering machine #{machine} done", :sputtering_machine_done, machine)
     end
 
     # --> start_sputtering_machine
     # --> start_coat_machine
     def sputtering_machine_done(machine, _)
-      
+      # Mark machine as idle
+      machine.idle!
+
+      # Schedule conveyor belt done
+      schedule(0, "One batch just finished in sputtering machine #{machine}", :start_coat_machine)
     end
 
     # -> coat_machine_done
     def start_coat_machine(_)
-      
+      schedule(6.seconds * 20, "Coat machine done", :coat_machine_done)
     end
 
     # --> start_coat_machine
     # --> start_conveyor_belt_for_coat
     def coat_machine_done(_)
-      
+      schedule(0, "Placing 20 items in conveyor belt", :start_conveyor_belt_for_coat)
     end
 
     # -> conveyor_belt_for_coat_done
     def start_conveyor_belt_for_coat(_)
-      
+      schedule(3.minutes, "20 items just fell of the conveyor belt", :conveyor_belt_for_coat_done)
     end
 
     # --> start_machine_4
     def conveyor_belt_for_coat_done(_)
-      
+      buffer = @buffers[2]
+      buffer.unreserve(20)
+      buffer.increment!(20)
+      schedule(0, "Trying to start machine 4", :start_machine_4)
     end
 
     # -> machine_4_done

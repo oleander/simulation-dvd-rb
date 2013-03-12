@@ -210,6 +210,10 @@ class DVD < Production
       schedule(0.seconds, "Starting #{machine}", :start_machine_1, machine.group)
     end
 
+    injection_molding_machines.each do |machine| 
+      schedule(5.minutes, "Initialize broke sequence for #{machine.group}", :machine_1_broke_down, machine)
+    end
+
     ####
     # Events
     ####
@@ -470,14 +474,17 @@ class DVD < Production
     end
 
     # -> machine_1_fixed
-    def machine_1_broke_down(_)
-      
+    def machine_1_broke_down(machine, _)
+      machine.break!
+      schedule(1.hour, "Machine #{machine} is now fixed", :machine_1_fixed, machine)
     end
 
     # -> machine_1_broke_down
     # --> start_machine_1
-    def machine_1_fixed(_)
-      
+    def machine_1_fixed(machine, _)
+      machine.fix!    
+      schedule(0, "Trying to start #{machine} after breakdown", :start_machine_1, machine.group)
+      schedule(5.minutes, "Machine #{machine} just broke down, darn!", :machine_1_broke_down, machine)
     end
   end
 end

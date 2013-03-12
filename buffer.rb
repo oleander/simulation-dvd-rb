@@ -28,7 +28,7 @@ class Buffer
   # @return Boolean Is buffer empty?
   #
   def empty?
-    return @current.zero?
+    @current <= 0
   end
 
   #

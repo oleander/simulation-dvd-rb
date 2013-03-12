@@ -361,8 +361,16 @@ class DVD < Production
         return say("Could not start #{machine_group} due to #{result.errors.join(", ")}", :red)
       end
 
+      # TODO: Move logic into buffer and machine group class
+      if machine_group.p_buffer.current - 20 < 0
+        return say("Could not start #{machine_group}, previous buffer almost empty")
+      end
+
+      if machine_group.n_buffer.current + 20 > machine_group.n_buffer.size
+        return say("Could not start #{machine_group}, next buffer almost full")
+      end
+
       # Decrement previous buffer by 20
-      # TODO: Make it possible to decrement by 20 without the loop
       machine_group.p_buffer.decrement!(20)
 
       # Reserve 20 spots in next buffer

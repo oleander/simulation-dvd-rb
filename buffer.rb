@@ -43,10 +43,18 @@ class Buffer
   end
 
   def unreserve(amount = 1)
+    if @reserve.zero?
+      raise ArgumentError.new("Nothing in buffer has been reserved")
+    end
+
     @reserve -= amount
   end
 
   def reserve(amount = 1)
+    if full_including_reserved?
+      raise ArgumentError.new("Buffer is already full, including reserved items")
+    end
+    
     @reserve += amount
   end
 

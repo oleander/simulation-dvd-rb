@@ -176,13 +176,15 @@ class DVD < Production
     # Printing machines
     ####
 
-    printing_machine_group = PrintingMachineGroup.new(
+    @printing_machine_group = printing_machine_group = PrintingMachineGroup.new(
       [], 
       "Printing", 
       81.seconds, 
       buffers[2],
       buffers[3] # Last "fictional" buffer, a.k.a output
     )
+
+    printing_machine_group.p_machine_group = sputtering_machine_group
 
     printing_machines = machines[:print].times.map do |id|
       PrintingMachine.new(id, printing_machine_group)
@@ -419,12 +421,44 @@ class DVD < Production
 
     # -> machine_4_done
     def start_machine_4(_)
-      
+      machine_group = @printing_machine_group
+      result = machine_group.can_produce?
+
+      unless result.status
+        return say("Could not start #{machine_group} due to #{result.errors.join(", ")}", :red)
+      end
+
+      # Decrement previous buffer by 20
+      # TODO: Make it possible to decrement by 20 without the loop
+      machine_group.p_buffer.decrement!
+
+      # Select first avalible machine
+      machine = machine_group.avalible_machines.first
+
+      # Mark machine as started
+      machine.start!
+
+     # Tell the sputtering machine group to start
+      if sputtering_machine_group = machine_group.p_machine_group
+        schedule(0, "Notify previous machine (#{sputtering_machine_group}) about item removed from buffer", :start_sputtering_machine, sputtering_machine_group)
+      else
+        # TODO: Remove, only for debug purposes
+        raise ArgumentError.new("Why don't 4 have a previous machine?")
+      end
+
+      schedule(10.minutes, "#{machine} done", :machine_4_done, machine)
     end
 
     # --> start_machine_4
-    def machine_4_done(_)
-      
+    def machine_4_done(machine, _)
+      # Machine is not broken, increment next buffer
+      machine.group.n_buffer.increment!
+
+      # We're done, så machine is idel
+      machine.idle!
+
+      # Restart the machine?
+      schedule(0, "Trying to restart #{machine.group}", :start_machine_4)
     end
 
     # -> machine_1_fixed

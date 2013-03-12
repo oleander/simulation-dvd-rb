@@ -48,17 +48,6 @@ class MachineGroup < Struct.new(:machines, :id, :process_time, :p_buffer, :n_buf
     result.new(status, errors)
   end
 
-  def adjust_buffer!(where)
-    case where
-    when :next
-      n_buffer.increment!
-    when :previous
-      p_buffer && p_buffer.decrement!
-    else
-      raise InvalidArgumentError.new("Invalid 'where' value: #{where}")
-    end
-  end
-
   def to_s
     id.to_s
   end

@@ -8,20 +8,20 @@ class Buffer
     @current =  0
   end
 
-  def increment!
+  def increment!(amount = 1)
     if full?
       raise ArgumentError.new("Can't increment full buffer #{id}")
     end
 
-    @current += 1
+    @current += amount
   end
 
-  def decrement!
+  def decrement!(amount = 1)
     if empty?
       raise ArgumentError.new("Can't decrement empty buffer #{id}")
     end
 
-    @current -= 1
+    @current -= amount
   end
 
   #
@@ -42,12 +42,12 @@ class Buffer
     @current + @reserve == size
   end
 
-  def unreserve
-    @reserve -= 1
+  def unreserve(amount = 1)
+    @reserve -= amount
   end
 
-  def reserve
-    @reserve += 1
+  def reserve(amount = 1)
+    @reserve += amount
   end
 
   def to_s

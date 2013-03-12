@@ -34,7 +34,34 @@ class SputteringMachine < Machine
 end
 
 class LacquerCoatingMachineGroup < MachineGroup
+  # 1. Must have at least one avalible machine
+  # 2. Previous buffer must have 20 items
+  # 3. Next buffer can't be full
+  def can_produce?
+    result = Struct.new(:status, :errors)
+    errors = []
+    status = true
 
+    # 1.
+    if avalible_machines.empty?
+      status = false
+      errors << "no machines avalible"
+    end
+    
+    # 2.
+    if p_buffer.current == 20
+      status = false
+      errors << "previous buffer do not have 20 items"
+    end
+
+    # 3.
+    if n_buffer.full_including_reserved?
+      status = false
+      errors << "next buffer is full"
+    end
+
+    result.new(status, errors)
+  end
 end
 
 class LacquerCoatingMachine < Machine
@@ -70,7 +97,7 @@ class DVD < Production
       2.seconds
     ]
 
-    buffers = max_buffers.each_with_index.map do |max_size, index|
+    @buffers = buffers = max_buffers.each_with_index.map do |max_size, index|
       Buffer.new(max_size, index)
     end
 
@@ -114,13 +141,16 @@ class DVD < Production
     # Sputtering machines
     ####
 
-    sputtering_machine_group = SputteringMachineGroup.new(
+    @sputtering_machine_group = sputtering_machine_group = SputteringMachineGroup.new(
       [], 
       "Sputtering", 
       15.seconds, 
       buffers[1],
-      nil # We do not have a next buffer
+      buffers[2]
     )
+
+    sputtering_machine_group.p_machine_group = dye_coating_machine_group
+    dye_coating_machine_group.n_machine_group = sputtering_machine_group
 
     sputtering_machines = machines[:sputt].times.map do |id|
       SputteringMachine.new(id, sputtering_machine_group)
@@ -295,8 +325,6 @@ class DVD < Production
     # --> start_machine_2
     # -> machine_2_conveyor_belt
     def machine_2_done(machine, _)
-      machine.group.n_buffer.unreserve
-
       # Abort if:
       #   machine currently broken?
       #   machine is idle, a.k.a is has been broken but now fixed
@@ -305,29 +333,59 @@ class DVD < Production
         return say("Ooops, machine #{machine} was broken before finished")
       end
 
-      # Machine is not broken, increment next buffer
-      machine.group.n_buffer.increment!
-
       # Mark machine as idle
       machine.idle!
 
-      # Restart the machine?
-      schedule(0, "Trying to restart #{machine.group}", :start_machine_2, machine.group)
+      # Schedule conveyor belt done
+      schedule(5.minutes, "One item just fell of conveyor belt #1", :machine_2_conveyor_belt, machine.group)
     end
 
     # --> start_sputtering_machine
-    def machine_2_conveyor_belt(_)
-      
+    def machine_2_conveyor_belt(group, _)
+      group.n_buffer.unreserve
+
+      # An item just fell of the conveyor belt
+      group.n_buffer.increment!
+
+      # Trying to start the sputtering machine
+      schedule(0, "Trying to start sputtering machine", :start_sputtering_machine, group.n_machine_group)
     end
 
     # -> sputtering_machine_done
-    def start_sputtering_machine(_)
-      
+    def start_sputtering_machine(machine_group, _)
+      result = machine_group.can_produce?
+
+      unless result.status
+        return say("Could not start #{machine_group} due to #{result.errors.join(", ")}", :red)
+      end
+
+      # Decrement previous buffer by 20
+      # TODO: Make it possible to decrement by 20 without the loop
+      machine_group.p_buffer.decrement!(20)
+
+      # Reserve 20 spots in next buffer
+      machine_group.n_buffer.reserve(20)
+
+      # Select first avalible machine
+      machine = machine_group.avalible_machines.first
+
+      # Mark machine as started
+      machine.start!
+
+     # Tell the dye coating machine group to start
+      if dye_coating_machine_group = machine_group.p_machine_group
+        schedule(0, "Notify previous machine (#{dye_coating_machine_group}) about item removed from buffer", :start_machine_2, dye_coating_machine_group)
+      else
+        # TODO: Remove, only for debug purposes
+        raise ArgumentError.new("Why don't 3 have a previous machine?")
+      end
+
+      schedule(10.minutes, "Sputtering macine #{machine} done", :sputtering_machine_done, machine)
     end
 
     # --> start_sputtering_machine
     # --> start_coat_machine
-    def sputtering_machine_done(_)
+    def sputtering_machine_done(machine, _)
       
     end
 

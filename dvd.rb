@@ -102,6 +102,9 @@ class DVD < Production
       buffers[1]
     )
 
+    # Notify previous machine group about us
+    injection_molding_machine_group.n_machine_group = dye_coating_machine_group
+
     dye_coating_machines = machines[:dye].times.map do |id|
       DyeCoatingMachine.new(id, dye_coating_machine_group)
     end
@@ -228,12 +231,38 @@ class DVD < Production
     # --> start_machine_1
     # --> start_machine_2
     def machine_1_done(machine, _)
-      
+      # Remove reserved space in buffer
+      machine.group.n_buffer.unreserve
+
+      # Abort if:
+      #   machine currently broken?
+      #   machine is idle, a.k.a is has been broken but now fixed
+      # TODO: Add nicer method to check if machine has been broken?
+      if machine.broken? or machine.idle?
+        return say("Ooops, machine #{machine} was broken before finished")
+      end
+
+      # Machine is not broken, increment next buffer
+      machine.group.n_buffer.increment!
+
+      # We're done, så machine is idel
+      machine.idle!
+
+      # Restart the machine?
+      schedule(0, "Trying to restart #{machine.group}", :start_machine_1, machine.group)
+
+      # Notify the dye coating machine group that an item just arrived
+      if dye_coating_machine_group = machine.group.n_machine_group
+        schedule(0, "Notify next machine (#{dye_coating_machine_group}) about new item", :start_machine_2, dye_coating_machine_group)
+      else
+        # TODO: Remove, only for debug purposes
+        raise ArgumentError.new("Why don't 1 have neighbor?")
+      end
     end
 
     # -> machine_2_done
     # --> start_machine_1
-    def start_machine_2(_)
+    def start_machine_2(machine_group, _)
       
     end
 

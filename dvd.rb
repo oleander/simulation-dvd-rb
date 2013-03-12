@@ -82,8 +82,8 @@ class DVD < Production
       [], 
       "InjectionMolding", 
       55.seconds, 
-      buffers[0], 
-      buffers[1]
+      nil, # First machine do not have a buffer 
+      buffers[0]
     )
 
     injection_molding_machines = machines[:im].times.map do |id|
@@ -98,8 +98,8 @@ class DVD < Production
       [], 
       "DyeCoating", 
       10.seconds, 
-      buffers[1], 
-      buffers[2]
+      buffers[0], 
+      buffers[1]
     )
 
     dye_coating_machines = machines[:dye].times.map do |id|
@@ -114,7 +114,7 @@ class DVD < Production
       [], 
       "Sputtering", 
       15.seconds, 
-      buffers[2],
+      buffers[1],
       nil # We do not have a next buffer
     )
 
@@ -166,7 +166,17 @@ class DVD < Production
       say(buffers.map(&:current).to_s, :yellow)
     end
 
+    ####
+    # Init
+    ####
+
+    injection_molding_machines.each do |machine|
+      schedule(0.seconds, "Starting #{machine}", :start_machine_1, machine.group)
+    end
+
+    ####
     # Events
+    ####
     #  start_machine_1
     #  machine_1_done
 
@@ -195,13 +205,29 @@ class DVD < Production
     end
 
     # -> machine_1_done
-    def start_machine_1(_)
+    def start_machine_1(machine_group, _)
+      result = machine_group.can_produce?
+
+      unless result.status
+        return say("Could not start #{machine_group}. #{result.errors.join(", ")}", :red)
+      end
       
+      # Mark machine as started
+      machine = machine_group.avalible_machines.first
+
+      # Reserve space in next buffer
+      machine_group.n_buffer.reserve
+
+      # Start found machine
+      machine.start!
+
+      # Schedule finished machine
+      schedule(machine_group.process_time, "Machine #{machine} is done", :machine_1_done, machine)
     end
 
     # --> start_machine_1
     # --> start_machine_2
-    def machine_1_done(_)
+    def machine_1_done(machine, _)
       
     end
 

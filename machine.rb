@@ -1,4 +1,13 @@
-class Machine < Struct.new(:id, :group)
+class Machine
+  attr_reader :id, :group
+
+  def initialize(id, group)
+    @id, @group = id, group
+    # Add our self to machine group
+    group.add(self)
+    super() # For the statemachine gem
+  end
+
   state_machine :state, initial: :idle do
     event :start do
       transition [:idle, :break] => :start

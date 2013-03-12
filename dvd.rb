@@ -14,63 +14,114 @@ class DVD < Production
       print: 2
     }
 
+    # Events
+    #  start_machine_1
+    #  machine_1_done
+
+    #  start_machine_2
+    #  machine_2_done
+
+    #  machine_2_conveyor_belt
+
+    #  start_sputtering_machine
+    #  sputtering_machine_done
+
+    #  start_coat_machine
+    #  coat_machine_done
+
+    #  start_conveyor_belt_for_coat
+    #  conveyor_belt_for_coat_done
+
+    #  start_machine_4
+    #  machine_4_done
+
+    #  machine_1_broke_down
+    #  machine_1_fixed
+
     done_in(2.days) do
       say("We're now done!")
     end
 
-    @machines[:im].times do |id|
-      schedule(rand(10).minutes, "Machine #{id + 1} is broken", :machine_broke, id + 1)
+    # -> machine_1_done
+    def start_machine_1(_)
+      
     end
-  end
 
-  # Called when wachine 1 is broken
-  def machine_broke(id, time_since_called)
-    # Calculate when buffer b2 has 20 items in it
-    # schedule(0.minute, "Buffer 2 has now 20 items", :buffer_2_has_20_items)
-    schedule(rand(10).minutes, "Machine #{id} is fixed", :machine_fixed, id)
+    # --> start_machine_1
+    # --> start_machine_2
+    def machine_1_done(_)
+      
+    end
 
-    # Mark one machine as broken
-    @machines[:im] -= 1
-  end
+    # -> machine_2_done
+    # --> start_machine_1
+    def start_machine_2(_)
+      
+    end
 
-  # Machine one is fixed
-  def machine_fixed(id, time_since_called)
-    schedule(rand(10).minutes, "Machine #{id} is broken", :machine_broke, id)
-    # schedule(0.minute, "Buffer 2 has now 20 items", :buffer_2_has_20_items)
+    # --> start_machine_2
+    # -> machine_2_conveyor_belt
+    def machine_2_done(_)
+      
+    end
 
-    # Mark one machine as fixed
-    @machines[:im] += 1
-  end
+    # --> start_sputtering_machine
+    def machine_2_conveyor_belt(_)
+      
+    end
 
-  # 20 items now exists in buffer 2
-  def buffer_2_has_20_items(time_since_called)
-    # Decrement buffer 2 with 20
-    # Calculate when sputtering is done, including being stuck
-    # Start sputtering machine, or stand in queue
-    schedule(5.minutes, "Start sputtering machine", :start_sputtering_machine)
-  end
+    # -> sputtering_machine_done
+    def start_sputtering_machine(_)
+      
+    end
 
-  # Start sputtering machine
-  def start_sputtering_machine(time_since_called)
-    # Calculate time when sputtering machine to be done
-    schedule(5.minutes, "Sputtering machine is now done", :sputtering_machine_is_done)
-  end
+    # --> start_sputtering_machine
+    # --> start_coat_machine
+    def sputtering_machine_done(_)
+      
+    end
 
-  # Called when sputtering machine is done
-  def sputtering_machine_is_done(time_since_called)
-    # If there is a queue, decrement buffer with 20 and start machine again
-    schedule(0.minutes, "Start sputtering again, without break", :start_sputtering_machine)
-    schedule(0.minutes, "Start coat machine", :start_coat_machine)
-  end
+    # -> coat_machine_done
+    def start_coat_machine(_)
+      
+    end
 
-  # Start coat machine
-  def start_coat_machine(time_since_called)
-    schedule(10.minutes, "Coat machine i now done", :lack_machine_is_done)
-  end
+    # --> start_coat_machine
+    # --> start_conveyor_belt_for_coat
+    def coat_machine_done(_)
+      
+    end
 
-  def lack_machine_is_done(time_since_called)
-    # If there is a queue, decrement queue with one and start machine again
-    schedule(0.minutes, "Start coat machine", :start_coat_machine)
+    # -> conveyor_belt_for_coat_done
+    def start_conveyor_belt_for_coat(_)
+      
+    end
+
+    # --> start_machine_4
+    def conveyor_belt_for_coat_done(_)
+      
+    end
+
+    # -> machine_4_done
+    def start_machine_4(_)
+      
+    end
+
+    # --> start_machine_4
+    def machine_4_done(_)
+      
+    end
+
+    # -> machine_1_fixed
+    def machine_1_broke_down(_)
+      
+    end
+
+    # -> machine_1_broke_down
+    # --> start_machine_1
+    def machine_1_fixed(_)
+      
+    end
   end
 end
 

@@ -1,8 +1,15 @@
 require "./production"
+require "state_machine"
+require "debugger"
+require "./machine"
+require "./buffer"
+require "./machine_group"
+
+Infinity = 1/0.0
 
 # (:machines, :id, :process_time, :p_buffer, :n_buffer)
 class InjectionMoldingMachineGroup < MachineGroup
-  
+
 end
 
 # (:id, :group)
@@ -30,7 +37,7 @@ class LacquerCoatingMachineGroup < MachineGroup
 
 end
 
-def LacquerCoatingMachine < Machine
+class LacquerCoatingMachine < Machine
 
 end
 

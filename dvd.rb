@@ -1,18 +1,163 @@
 require "./production"
 
+# (:machines, :id, :process_time, :p_buffer, :n_buffer)
+class InjectionMoldingMachineGroup < MachineGroup
+  
+end
+
+# (:id, :group)
+class InjectionMoldingMachine < Machine
+
+end
+
+class DyeCoatingMachineGroup < MachineGroup
+
+end
+
+class DyeCoatingMachine < Machine
+  
+end
+
+class SputteringMachineGroup < MachineGroup
+
+end
+
+class SputteringMachine < Machine
+
+end
+
+class LacquerCoatingMachineGroup < MachineGroup
+
+end
+
+def LacquerCoatingMachine < Machine
+
+end
+
+class PrintingMachineGroup < MachineGroup
+
+end
+
+class PrintingMachine < Machine
+
+end
+
 class DVD < Production
   def setup
-    # Macine 1: im
+    # Machine 1: im
     # Machine 2: dry
     # Machine 3: sputt, coat
     # Machine 4: print
-    @machines = {
+    machines = {
       im: 4,
-      dry: 2,
+      dye: 2,
       sputt: 2,
-      coat: 2,
+      lac: 2,
       print: 2
     }
+
+    max_buffers = [20, 20, 20, Infinity]
+    process_times = [
+      55.seconds, 
+      5.seconds,
+      2.seconds
+    ]
+
+    buffers = max_buffers.each_with_index.map do |max_size, index|
+      Buffer.new(max_size, index)
+    end
+
+    ####
+    # Injection molding machines
+    ####
+
+    injection_molding_machine_group = InjectionMoldingMachineGroup.new(
+      [], 
+      "InjectionMolding", 
+      55.seconds, 
+      buffers[0], 
+      buffers[1]
+    )
+
+    injection_molding_machines = machines[:im].times.map do |id|
+      InjectionMoldingMachine.new(id, injection_molding_machine_group)
+    end
+
+    ####
+    # Dye coating machines
+    ####
+
+    dye_coating_machine_group = DyeCoatingMachineGroup.new(
+      [], 
+      "DyeCoating", 
+      10.seconds, 
+      buffers[1], 
+      buffers[2]
+    )
+
+    dye_coating_machines = machines[:dye].times.map do |id|
+      DyeCoatingMachine.new(id, dye_coating_machine_group)
+    end
+
+    ####
+    # Sputtering machines
+    ####
+
+    sputtering_machine_group = SputteringMachineGroup.new(
+      [], 
+      "Sputtering", 
+      15.seconds, 
+      buffers[2],
+      nil # We do not have a next buffer
+    )
+
+    sputtering_machines = machines[:sputt].times.map do |id|
+      SputteringMachine.new(id, sputtering_machine_group)
+    end
+
+    ####
+    # Lacquer coating machines
+    ####
+
+    lacquer_coating_machine_group = LacquerCoatingMachineGroup.new(
+      [], 
+      "LacquerCoating", 
+      15.seconds, 
+      nil, # Do not not have any buffers
+      nil
+    )
+
+    lacquer_coating_machines = machines[:lac].times.map do |id|
+      LacquerCoatingMachine.new(id, lacquer_coating_machine_group)
+    end
+
+    ####
+    # Printing machines
+    ####
+
+    printing_machine_group = PrintingMachineGroup.new(
+      [], 
+      "Printing", 
+      81.seconds, 
+      buffers[2],
+      buffers[3] # Last "fictional" buffer, a.k.a output
+    )
+
+    printing_machines = machines[:print].times.map do |id|
+      PrintingMachine.new(id, printing_machine_group)
+    end
+
+    ####
+    # Configuration
+    ####
+
+    done_in 1.day  do
+      say(buffers.map(&:current).to_s, :red)
+    end
+
+    every_time do
+      say(buffers.map(&:current).to_s, :yellow)
+    end
 
     # Events
     #  start_machine_1

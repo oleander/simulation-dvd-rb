@@ -3,6 +3,7 @@ require "state_machine"
 require "debugger"
 require "./machine"
 require "./buffer"
+require "./item"
 require "./machine_group"
 
 Infinity = 1/0.0
@@ -195,11 +196,11 @@ class DVD < Production
     ####
 
     done_in 1.day  do
-      say(buffers.map(&:current).to_s, :red)
+      say(buffers.map(&:current_size).to_s, :red)
     end
 
     every_time do
-      say(buffers.map(&:current).to_s, :yellow)
+      say(buffers.map(&:current_size).to_s, :yellow)
     end
 
     ####
@@ -262,12 +263,12 @@ class DVD < Production
       machine.start!
 
       # Schedule finished machine
-      schedule(machine_group.process_time, "Machine #{machine} is done", :machine_1_done, machine)
+      schedule(machine_group.process_time, "Machine #{machine} is done", :machine_1_done, machine, Item.new)
     end
 
     # --> start_machine_1
     # --> start_machine_2
-    def machine_1_done(machine, _)
+    def machine_1_done(machine, item, _)
       # Remove reserved space in buffer
       machine.group.n_buffer.unreserve
 
@@ -280,7 +281,7 @@ class DVD < Production
       end
 
       # Machine is not broken, increment next buffer
-      machine.group.n_buffer.increment!
+      machine.group.n_buffer.add(item)
 
       # We're done, så machine is idel
       machine.idle!
@@ -310,14 +311,14 @@ class DVD < Production
       machine = machine_group.avalible_machines.first
 
       # Decrement previous buffer (we're taking one item)
-      machine_group.p_buffer.decrement!
+      item = machine_group.p_buffer.take(1).first
 
       machine_group.n_buffer.reserve
 
       machine.start!
 
       # Schedule finished machine
-      schedule(machine_group.process_time, "Machine #{machine} is done", :machine_2_done, machine)
+      schedule(machine_group.process_time, "Machine #{machine} is done", :machine_2_done, machine, item)
 
       # Tell the injection molding machine group to start
       if injection_molding_machine_group = machine_group.p_machine_group
@@ -330,7 +331,7 @@ class DVD < Production
 
     # --> start_machine_2
     # -> machine_2_conveyor_belt
-    def machine_2_done(machine, _)
+    def machine_2_done(machine, item, _)
       # Abort if:
       #   machine currently broken?
       #   machine is idle, a.k.a is has been broken but now fixed
@@ -343,15 +344,15 @@ class DVD < Production
       machine.idle!
 
       # Schedule conveyor belt done
-      schedule(5.minutes, "One item just fell of conveyor belt #1", :machine_2_conveyor_belt, machine.group)
+      schedule(5.minutes, "One item just fell of conveyor belt #1", :machine_2_conveyor_belt, machine.group, item)
     end
 
     # --> start_sputtering_machine
-    def machine_2_conveyor_belt(group, _)
+    def machine_2_conveyor_belt(group, item, _)
       group.n_buffer.unreserve
 
       # An item just fell of the conveyor belt
-      group.n_buffer.increment!
+      group.n_buffer.add(item)
 
       # Trying to start the sputtering machine
       schedule(0, "Trying to start sputtering machine", :start_sputtering_machine, group.n_machine_group)
@@ -366,16 +367,16 @@ class DVD < Production
       end
 
       # TODO: Move logic into buffer and machine group class
-      if machine_group.p_buffer.current - 20 < 0
+      if machine_group.p_buffer.current_size - 20 < 0
         return say("Could not start #{machine_group}, previous buffer almost empty")
       end
 
-      if machine_group.n_buffer.current + 20 > machine_group.n_buffer.size
+      if machine_group.n_buffer.current_size + 20 > machine_group.n_buffer.size
         return say("Could not start #{machine_group}, next buffer almost full")
       end
 
       # Decrement previous buffer by 20
-      machine_group.p_buffer.decrement!(20)
+      items = machine_group.p_buffer.take(20)
 
       # Reserve 20 spots in next buffer
       machine_group.n_buffer.reserve(20)
@@ -394,41 +395,43 @@ class DVD < Production
         raise ArgumentError.new("Why don't 3 have a previous machine?")
       end
 
-      schedule(10.minutes, "Sputtering machine #{machine} done", :sputtering_machine_done, machine)
+      schedule(10.minutes, "Sputtering machine #{machine} done", :sputtering_machine_done, machine, items)
     end
 
     # --> start_sputtering_machine
     # --> start_coat_machine
-    def sputtering_machine_done(machine, _)
+    def sputtering_machine_done(machine, items, _)
       # Mark machine as idle
       machine.idle!
 
       # Schedule conveyor belt done
-      schedule(0, "One batch just finished in sputtering machine #{machine}", :start_coat_machine)
+      schedule(0, "One batch just finished in sputtering machine #{machine}", :start_coat_machine, items)
     end
 
     # -> coat_machine_done
-    def start_coat_machine(_)
-      schedule(6.seconds * 20, "Coat machine done", :coat_machine_done)
+    def start_coat_machine(items, _)
+      schedule(6.seconds * items.length, "Coat machine done", :coat_machine_done, items)
     end
 
     # --> start_coat_machine
     # --> start_conveyor_belt_for_coat
-    def coat_machine_done(_)
-      schedule(0, "Placing 20 items in conveyor belt", :start_conveyor_belt_for_coat)
+    def coat_machine_done(items, _)
+      schedule(0, "Placing 20 items in conveyor belt", :start_conveyor_belt_for_coat, items)
     end
 
     # -> conveyor_belt_for_coat_done
-    def start_conveyor_belt_for_coat(_)
-      schedule(3.minutes, "20 items just fell of the conveyor belt", :conveyor_belt_for_coat_done)
+    def start_conveyor_belt_for_coat(items, _)
+      schedule(3.minutes, "20 items just fell of the conveyor belt", :conveyor_belt_for_coat_done, items)
     end
 
     # --> start_machine_4
-    def conveyor_belt_for_coat_done(_)
+    def conveyor_belt_for_coat_done(items, _)
       buffer = @buffers[2]
       buffer.unreserve(20)
-      buffer.increment!(20)
-      schedule(0, "Trying to start machine 4", :start_machine_4)
+      buffer.add(items)
+      items.length.times do
+        schedule(0, "Trying to start machine 4", :start_machine_4)
+      end
     end
 
     # -> machine_4_done
@@ -442,7 +445,7 @@ class DVD < Production
 
       # Decrement previous buffer by 20
       # TODO: Make it possible to decrement by 20 without the loop
-      machine_group.p_buffer.decrement!
+      item = machine_group.p_buffer.take(1).first
 
       # Select first avalible machine
       machine = machine_group.avalible_machines.first
@@ -458,13 +461,15 @@ class DVD < Production
         raise ArgumentError.new("Why don't 4 have a previous machine?")
       end
 
-      schedule(10.minutes, "#{machine} done", :machine_4_done, machine)
+      schedule(10.minutes, "#{machine} done", :machine_4_done, machine, item)
     end
 
     # --> start_machine_4
-    def machine_4_done(machine, _)
+    def machine_4_done(machine, item, _)
       # Machine is not broken, increment next buffer
-      machine.group.n_buffer.increment!
+      item.done_at = Time.now
+
+      machine.group.n_buffer.add(item)
 
       # We're done, så machine is idel
       machine.idle!
@@ -482,7 +487,7 @@ class DVD < Production
     # -> machine_1_broke_down
     # --> start_machine_1
     def machine_1_fixed(machine, _)
-      machine.fix!    
+      machine.fix!
       schedule(0, "Trying to start #{machine} after breakdown", :start_machine_1, machine.group)
       schedule(5.minutes, "Machine #{machine} just broke down, darn!", :machine_1_broke_down, machine)
     end

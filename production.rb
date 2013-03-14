@@ -5,6 +5,12 @@ require "timecop"
 require "time"
 require "debugger"
 
+module Calculation
+  def self.exp(lambda)
+     (-1 * Math.log(1 - rand) * lambda.to_i).seconds
+  end
+end
+
 class Production
   def initialize
     @queue = PQueue.new { |a,b| a.time < b.time }

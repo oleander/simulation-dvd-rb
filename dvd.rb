@@ -1,6 +1,5 @@
 require "./production"
 require "state_machine"
-require "debugger"
 require "./machine"
 require "./buffer"
 require "./item"
@@ -15,7 +14,15 @@ end
 
 # (:id, :group)
 class InjectionMoldingMachine < Machine
+  def time_to_fix
+    (15.times.map{ rand(2) }.inject(:+) * 4).minutes
+    # 1.hour
+  end
 
+  def time_to_breakdown
+    Calculation.exp(2.hours)
+    # 5.minutes
+  end
 end
 
 class DyeCoatingMachineGroup < MachineGroup
@@ -195,7 +202,7 @@ class DVD < Production
     # Configuration
     ####
 
-    done_in 1.year  do
+    done_in 5.hours  do
       say(buffers.map(&:current_size).to_s, :red)
       say("Average time for item #{buffers.last.average_time} in seconds", :blue)
     end
@@ -213,7 +220,7 @@ class DVD < Production
     end
 
     injection_molding_machines.each do |machine| 
-      schedule(5.minutes, "Initialize broke sequence for #{machine.group}", :machine_1_broke_down, machine)
+      schedule(machine.time_to_breakdown, "Initialize broke sequence for #{machine.group}", :machine_1_broke_down, machine)
     end
 
     ####
@@ -481,7 +488,7 @@ class DVD < Production
     # -> machine_1_fixed
     def machine_1_broke_down(machine, _)
       machine.break!
-      schedule(1.hour, "Machine #{machine} is now fixed", :machine_1_fixed, machine)
+      schedule(machine.time_to_breakdown, "Machine #{machine} is now fixed", :machine_1_fixed, machine)
     end
 
     # -> machine_1_broke_down
@@ -489,7 +496,7 @@ class DVD < Production
     def machine_1_fixed(machine, _)
       machine.fix!
       schedule(0, "Trying to start #{machine} after breakdown", :start_machine_1, machine.group)
-      schedule(5.minutes, "Machine #{machine} just broke down, darn!", :machine_1_broke_down, machine)
+      schedule(machine.time_to_fix, "Machine #{machine} just broke down, darn!", :machine_1_broke_down, machine)
     end
   end
 end

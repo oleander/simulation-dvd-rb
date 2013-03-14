@@ -10,7 +10,7 @@ class Item
   # @return Integer Time since creation in seconds
   #
   def production_time
-    if done?
+    unless done?
       raise RuntimeError.new("Item is not yet done")
     end
 

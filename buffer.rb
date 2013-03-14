@@ -42,6 +42,13 @@ class Buffer
     @queue.size - amount >= 0
   end
 
+  #
+  # @return Array<Item>
+  #
+  def items
+    @queue.instance_eval{ @que }
+  end
+
   def current_size
     @queue.size
   end

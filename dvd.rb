@@ -195,8 +195,10 @@ class DVD < Production
     # Configuration
     ####
 
-    done_in 1.day  do
+    done_in 1.week  do
+      time = (buffers.last.items.map(&:production_time).inject(:+) / buffers.last.items.length.to_f).to_i
       say(buffers.map(&:current_size).to_s, :red)
+      say("Average time for item #{time} in seconds", :blue)
     end
 
     every_time do
@@ -240,10 +242,6 @@ class DVD < Production
 
     #  machine_1_broke_down
     #  machine_1_fixed
-
-    done_in(2.days) do
-      say("We're now done!")
-    end
 
     # -> machine_1_done
     def start_machine_1(machine_group, _)
@@ -406,6 +404,9 @@ class DVD < Production
 
       # Schedule conveyor belt done
       schedule(0, "One batch just finished in sputtering machine #{machine}", :start_coat_machine, items)
+
+      # Can we restart sputtering machine?
+      schedule(0, "Trying to start sputtering machine", :start_sputtering_machine, machine.group)
     end
 
     # -> coat_machine_done

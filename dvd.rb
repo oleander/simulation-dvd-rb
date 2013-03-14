@@ -195,10 +195,9 @@ class DVD < Production
     # Configuration
     ####
 
-    done_in 1.week  do
-      time = (buffers.last.items.map(&:production_time).inject(:+) / buffers.last.items.length.to_f).to_i
+    done_in 1.year  do
       say(buffers.map(&:current_size).to_s, :red)
-      say("Average time for item #{time} in seconds", :blue)
+      say("Average time for item #{buffers.last.average_time} in seconds", :blue)
     end
 
     every_time do

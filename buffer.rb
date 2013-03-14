@@ -49,6 +49,10 @@ class Buffer
     @queue.instance_eval{ @que }
   end
 
+  def average_time
+    (items.map(&:production_time).inject(:+) / items.length.to_f).to_i
+  end
+
   def current_size
     @queue.size
   end

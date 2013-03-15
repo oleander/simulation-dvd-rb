@@ -24,7 +24,9 @@ end
 
 # (:id, :group)
 class InjectionMoldingMachine < Machine
-
+  def is_or_has_has_been_broken?
+    broken? or idle?
+  end
 end
 
 class DyeCoatingMachineGroup < MachineGroup
@@ -240,7 +242,7 @@ class DVD < Production
       #   machine currently broken?
       #   machine is idle, a.k.a is has been broken but now fixed
       # TODO: Add nicer method to check if machine has been broken?
-      if machine.broken? or machine.idle?
+      if machine.is_or_has_has_been_broken?
         return say("Ooops, machine #{machine} was broken before finished")
       end
 

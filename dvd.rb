@@ -9,20 +9,21 @@ Infinity = 1/0.0
 
 # (:machines, :id, :process_time, :p_buffer, :n_buffer)
 class InjectionMoldingMachineGroup < MachineGroup
-
-end
-
-# (:id, :group)
-class InjectionMoldingMachine < Machine
   def time_to_fix
     (15.times.map{ rand(2) }.inject(:+) * 4).minutes
-    # 1.hour
   end
 
   def time_to_breakdown
     Calculation.exp(2.hours)
-    # 5.minutes
   end
+
+  def time_to_produce
+    Calculation.exp(58.26.seconds).seconds
+  end
+end
+
+# (:id, :group)
+class InjectionMoldingMachine < Machine
 end
 
 class DyeCoatingMachineGroup < MachineGroup
@@ -46,7 +47,9 @@ class LacquerCoatingMachine < Machine
 end
 
 class PrintingMachineGroup < MachineGroup
-
+  def time_to_produce
+    (rand * 10 + 20).seconds
+  end
 end
 
 class PrintingMachine < Machine
@@ -155,9 +158,10 @@ class DVD < Production
     # Configuration
     ####
 
-    done_in 5.hours  do
+    done_in 52.weeks  do
       say(buffers.map(&:current_size).to_s, :red)
       say("Average time for item #{buffers.last.average_time} in seconds", :blue)
+      say("Amount of loops #{loops}")
     end
 
     every_time do
@@ -173,7 +177,7 @@ class DVD < Production
     end
 
     injection_molding_machines.each do |machine| 
-      schedule(machine.time_to_breakdown, "Initialize broke sequence for #{machine.group}", :machine_1_broke_down, machine)
+      schedule(machine.group.time_to_breakdown, "Initialize broke sequence for #{machine.group}", :machine_1_broke_down, machine)
     end
 
     ####
@@ -220,7 +224,7 @@ class DVD < Production
       machine.start!
 
       # Schedule finished machine
-      schedule(machine_group.process_time, "Machine #{machine} is done", :machine_1_done, machine, Item.new)
+      schedule(machine_group.time_to_produce, "Machine #{machine} is done", :machine_1_done, machine, Item.new)
     end
 
     # --> start_machine_1
@@ -412,7 +416,7 @@ class DVD < Production
         raise ArgumentError.new("Why don't 4 have a previous machine?")
       end
 
-      schedule(10.minutes, "#{machine} done", :machine_4_done, machine, item)
+      schedule(machine_group.time_to_produce, "#{machine} done", :machine_4_done, machine, item)
     end
 
     # --> start_machine_4
@@ -432,7 +436,7 @@ class DVD < Production
     # -> machine_1_fixed
     def machine_1_broke_down(machine, _)
       machine.break!
-      schedule(machine.time_to_breakdown, "Machine #{machine} is now fixed", :machine_1_fixed, machine)
+      schedule(machine.group.time_to_breakdown, "Machine #{machine} is now fixed", :machine_1_fixed, machine)
     end
 
     # -> machine_1_broke_down
@@ -440,7 +444,7 @@ class DVD < Production
     def machine_1_fixed(machine, _)
       machine.fix!
       schedule(0, "Trying to start #{machine} after breakdown", :start_machine_1, machine.group)
-      schedule(machine.time_to_fix, "Machine #{machine} just broke down, darn!", :machine_1_broke_down, machine)
+      schedule(machine.group.time_to_fix, "Machine #{machine} just broke down, darn!", :machine_1_broke_down, machine)
     end
   end
 end

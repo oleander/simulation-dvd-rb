@@ -12,14 +12,18 @@ module Calculation
 end
 
 class Production
+  attr_reader :loops
+  
   def initialize
-    @queue = PQueue.new { |a,b| a.time < b.time }
-    @event = Struct.new(:name, :callback, :arguments, :seed, :time)
-
+    @queue      = PQueue.new { |a,b| a.time < b.time }
+    @event      = Struct.new(:name, :callback, :arguments, :seed, :time)
+    @delay      = nil
+    @loops      = 0
+    @done       = false
     @start_time = Time.parse("00:00")
-    Timecop.freeze(@start_time)
-    @done = false
-    @delay = nil
+
+    jump_to(@start_time)
+
     execute!
   end
 
@@ -78,6 +82,7 @@ class Production
     next_time = nil
 
     loop do
+      @loops += 1
       if done?
         debug("We're now done, bye!"); break
       end
@@ -111,6 +116,10 @@ class Production
     end
   end
 
+  def jump_to(time)
+    Timecop.freeze(time)
+  end
+
   # Abstract method
   def setup
     debug("#setup not implemented")
@@ -120,7 +129,7 @@ class Production
     event = @queue.pop
     time = event.time
     
-    Timecop.freeze(time)
+    jump_to(time)
 
     debug(event.name)
 

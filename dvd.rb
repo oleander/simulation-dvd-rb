@@ -38,7 +38,10 @@ class DyeCoatingMachine < Machine
 end
 
 class SputteringMachineGroup < MachineGroup
-
+  def time_to_produce
+    delay = 20.times.map { 5.minutes if rand(100) < 3 }.reject(&:nil?).inject(:+) || 0
+    20 * 10.seconds + delay
+  end
 end
 
 class SputteringMachine < Machine
@@ -75,9 +78,6 @@ class DVD < Production
 
     max_buffers = [20, 20, 20, Infinity]
     process_times = [
-      55.seconds, 
-      5.seconds,
-      2.seconds
     ]
 
     @buffers = buffers = max_buffers.each_with_index.map do |max_size, index|
@@ -355,7 +355,7 @@ class DVD < Production
         raise ArgumentError.new("Why don't 3 have a previous machine?")
       end
 
-      schedule(10.minutes, "Sputtering machine #{machine} done", :sputtering_machine_done, machine, items)
+      schedule(machine_group.time_to_produce, "Sputtering machine #{machine} done", :sputtering_machine_done, machine, items)
     end
 
     # --> start_sputtering_machine

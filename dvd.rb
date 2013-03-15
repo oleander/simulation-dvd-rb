@@ -46,6 +46,7 @@ class LacquerCoatingMachineGroup < MachineGroup
   # 2. Previous buffer must have 20 items
   # 3. Next buffer can't be full
   def can_produce?
+    raise "OK"
     result = Struct.new(:status, :errors)
     errors = []
     status = true

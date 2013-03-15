@@ -77,8 +77,6 @@ class DVD < Production
     }
 
     max_buffers = [20, 20, 20, Infinity]
-    process_times = [
-    ]
 
     @buffers = buffers = max_buffers.each_with_index.map do |max_size, index|
       Buffer.new(max_size, index)
@@ -91,7 +89,7 @@ class DVD < Production
     injection_molding_machine_group = InjectionMoldingMachineGroup.new(
       [], 
       "InjectionMolding", 
-      55.seconds, 
+      nil, 
       nil, # First machine do not have a buffer 
       buffers[0]
     )
@@ -107,7 +105,7 @@ class DVD < Production
     dye_coating_machine_group = DyeCoatingMachineGroup.new(
       [], 
       "DyeCoating", 
-      10.seconds, 
+      nil, 
       buffers[0], 
       buffers[1]
     )
@@ -127,7 +125,7 @@ class DVD < Production
     @sputtering_machine_group = sputtering_machine_group = SputteringMachineGroup.new(
       [], 
       "Sputtering", 
-      15.seconds, 
+      nil,      
       buffers[1],
       buffers[2]
     )
@@ -146,7 +144,7 @@ class DVD < Production
     @printing_machine_group = printing_machine_group = PrintingMachineGroup.new(
       [], 
       "Printing", 
-      81.seconds, 
+      nil, 
       buffers[2],
       buffers[3] # Last "fictional" buffer, a.k.a output
     )

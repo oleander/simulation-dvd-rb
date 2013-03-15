@@ -24,10 +24,13 @@ end
 
 # (:id, :group)
 class InjectionMoldingMachine < Machine
+
 end
 
 class DyeCoatingMachineGroup < MachineGroup
-
+  def time_to_produce
+    Calculation.exp(24.46.seconds).seconds
+  end
 end
 
 class DyeCoatingMachine < Machine
@@ -158,7 +161,7 @@ class DVD < Production
     # Configuration
     ####
 
-    done_in 52.weeks  do
+    done_in 2.days  do
       say(buffers.map(&:current_size).to_s, :red)
       say("Average time for item #{buffers.last.average_time} in seconds", :blue)
       say("Amount of loops #{loops}")
@@ -167,6 +170,8 @@ class DVD < Production
     every_time do
       say(buffers.map(&:current_size).to_s, :yellow)
     end
+
+    # delay(0.2.seconds)
 
     ####
     # Init
@@ -279,7 +284,7 @@ class DVD < Production
       machine.start!
 
       # Schedule finished machine
-      schedule(machine_group.process_time, "Machine #{machine} is done", :machine_2_done, machine, item)
+      schedule(machine_group.time_to_produce, "Machine #{machine} is done", :machine_2_done, machine, item)
 
       # Tell the injection molding machine group to start
       if injection_molding_machine_group = machine_group.p_machine_group
@@ -306,6 +311,9 @@ class DVD < Production
 
       # Schedule conveyor belt done
       schedule(5.minutes, "One item just fell of conveyor belt #1", :machine_2_conveyor_belt, machine.group, item)
+
+      # Restart machine 2
+      schedule(0, "Restart machine group #{machine.group}", :start_machine_2, machine.group)
     end
 
     # --> start_sputtering_machine

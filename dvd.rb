@@ -364,19 +364,10 @@ class DVD < Production
 
     # -> sputtering_machine_done
     def start_sputtering_machine(machine_group, _)
-      result = machine_group.can_produce?
+      result = machine_group.can_produce?(20)
 
       unless result.status
         return say("Could not start #{machine_group} due to #{result.errors.join(", ")}", :red)
-      end
-
-      # TODO: Move logic into buffer and machine group class
-      if machine_group.p_buffer.current_size - 20 < 0
-        return say("Could not start #{machine_group}, previous buffer almost empty")
-      end
-
-      if machine_group.n_buffer.current_size + 20 > machine_group.n_buffer.size
-        return say("Could not start #{machine_group}, next buffer almost full")
       end
 
       # Decrement previous buffer by 20

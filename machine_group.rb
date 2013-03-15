@@ -22,7 +22,7 @@ class MachineGroup < Struct.new(:machines, :id, :process_time, :p_buffer, :n_buf
   # 1. Must have at least one avalible machine
   # 2. Previous buffer can't be empty
   # 3. Next buffer can't be full
-  def can_produce?
+  def can_produce?(amount = 1)
     result = Struct.new(:status, :errors)
     errors = []
     status = true
@@ -34,13 +34,13 @@ class MachineGroup < Struct.new(:machines, :id, :process_time, :p_buffer, :n_buf
     end
     
     # 2.
-    if p_buffer and p_buffer.empty?
+    if p_buffer and not p_buffer.can_take_items?(amount)
       status = false
       errors << "previous buffer is empty"
     end
 
     # 3.
-    if n_buffer.full_including_reserved?
+    unless n_buffer.has_space_for?(amount, include_reserved: true)
       status = false
       errors << "next buffer is full"
     end

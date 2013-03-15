@@ -6,12 +6,12 @@ class Buffer
   def initialize(size, id)
     @id      = id
     @size    = size
-    @reserve = 0
+    @reserved = 0
     @queue =  Queue.new
   end
 
   def add(*items)
-    unless has_space_for?(items)
+    unless has_space_for?(items.length)
       raise ArgumentError.new("Can't increment full buffer #{id} #{current_size} : #{@size}")
     end
 
@@ -34,12 +34,14 @@ class Buffer
     raise ArgumentError.new("#decrement! is not in use, RTFM")
   end
 
-  def has_space_for?(items)
-    @queue.size + items.length <= @size
+  def has_space_for?(amount, options = {})
+    reserved = options[:include_reserved] ? @reserved : 0
+    @queue.size + amount + reserved <= @size
   end
 
-  def can_take_items?(amount)
-    @queue.size - amount >= 0
+  def can_take_items?(amount, options = {})
+    reserved = options[:include_reserved] ? @reserved : 0
+    @queue.size - amount - reserved >= 0
   end
 
   #
@@ -62,15 +64,15 @@ class Buffer
   end
 
   def full_including_reserved?
-    @queue.size + @reserve == size
+    @queue.size + @reserved == size
   end
 
   def unreserve(amount = 1)
-    if @reserve.zero?
+    if @reserved.zero?
       raise ArgumentError.new("Nothing in buffer has been reserved")
     end
 
-    @reserve -= amount
+    @reserved -= amount
   end
 
   def reserve(amount = 1)
@@ -78,7 +80,7 @@ class Buffer
       raise ArgumentError.new("Buffer is already full, including reserved items")
     end
     
-    @reserve += amount
+    @reserved += amount
   end
 
   def to_s

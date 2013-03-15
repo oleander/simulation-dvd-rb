@@ -41,38 +41,6 @@ class SputteringMachine < Machine
 
 end
 
-class LacquerCoatingMachineGroup < MachineGroup
-  # 1. Must have at least one avalible machine
-  # 2. Previous buffer must have 20 items
-  # 3. Next buffer can't be full
-  def can_produce?
-    raise "OK"
-    result = Struct.new(:status, :errors)
-    errors = []
-    status = true
-
-    # 1.
-    if avalible_machines.empty?
-      status = false
-      errors << "no machines avalible"
-    end
-    
-    # 2.
-    if p_buffer.current == 20
-      status = false
-      errors << "previous buffer do not have 20 items"
-    end
-
-    # 3.
-    if n_buffer.full_including_reserved?
-      status = false
-      errors << "next buffer is full"
-    end
-
-    result.new(status, errors)
-  end
-end
-
 class LacquerCoatingMachine < Machine
 
 end
@@ -163,22 +131,6 @@ class DVD < Production
 
     sputtering_machines = machines[:sputt].times.map do |id|
       SputteringMachine.new(id, sputtering_machine_group)
-    end
-
-    ####
-    # Lacquer coating machines
-    ####
-
-    lacquer_coating_machine_group = LacquerCoatingMachineGroup.new(
-      [], 
-      "LacquerCoating", 
-      15.seconds, 
-      nil, # Do not not have any buffers
-      nil
-    )
-
-    lacquer_coating_machines = machines[:lac].times.map do |id|
-      LacquerCoatingMachine.new(id, lacquer_coating_machine_group)
     end
 
     ####

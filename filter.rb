@@ -8,9 +8,9 @@ class Filter < Struct.new(:items, :offset, :runtime)
   def process!
     start_time = items.first.created_at
     start_time = items.first.done_at
-    limit = start_time.to_i + 250 * 60
+    limit = start_time.to_i + offset * 60
 
-    real_runtime = runtime.hours - 250 * 60
+    real_runtime = runtime.hours - offset * 60
 
     # Remove all items that is outside out scope
     items.select! { |item| item.done_at.to_i >= limit }

@@ -238,10 +238,6 @@ class DVD < Production
       # Remove reserved space in buffer
       machine.group.n_buffer.unreserve
 
-      # Abort if:
-      #   machine currently broken?
-      #   machine is idle, a.k.a is has been broken but now fixed
-      # TODO: Add nicer method to check if machine has been broken?
       if machine.is_or_has_has_been_broken?
         return say("Ooops, machine #{machine} was broken before finished")
       end

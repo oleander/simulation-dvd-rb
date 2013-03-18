@@ -65,12 +65,12 @@ class PrintingMachine < Machine
 end
 
 class DVD < Production
-  def setup
+  def initialize(machines = nil, max_buffers = nil)
     # Machine 1: im
     # Machine 2: dry
     # Machine 3: sputt, coat
     # Machine 4: print
-    machines = {
+    @machines = machines || {
       im: 4,
       dye: 2,
       sputt: 2,
@@ -78,7 +78,13 @@ class DVD < Production
       print: 2
     }
 
-    max_buffers = [20, 20, 20, Infinity]
+    @max_buffers = max_buffers || [20, 20, 20, Infinity]
+    super()
+  end
+
+  def setup
+    machines    = @machines
+    max_buffers = @max_buffers
 
     @buffers = buffers = max_buffers.each_with_index.map do |max_size, index|
       Buffer.new(max_size, index)
@@ -453,4 +459,4 @@ class DVD < Production
   end
 end
 
-DVD.new
+DVD.new if __FILE__ == $0

@@ -52,7 +52,11 @@ class Buffer
   end
 
   def average_time
-    (items.map(&:production_time).inject(:+) / items.length.to_f).to_i
+    if total_time = (items.map(&:production_time).inject(:+) || 0) == 0 or tems.length.zero?
+      raise "No items were produced"
+    end
+
+    (total_time / items.length.to_f).to_i
   end
 
   def current_size

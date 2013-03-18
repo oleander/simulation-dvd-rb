@@ -2,7 +2,7 @@
 
 Max buffers, minimum amount of machines
 
-`ruby simulation.rb --runtime 200 --quiet 1 --buffers 100,100,100 --im 4 --dye 2 --sputt 2 --lac 2 --print 2`
+`ruby simulation.rb --runtime 24 --quiet 1 --buffers 100,100,100 --im 4 --dye 2 --sputt 2 --lac 2 --print 2`
 
 ![1](1.png)
 
@@ -10,7 +10,7 @@ Max buffers, minimum amount of machines
 
 Max buffers, maximum amount of machines
 
-`ruby simulation.rb --runtime 200 --quiet 1 --buffers 100,100,100 --im 12 --dye 6 --sputt 6 --lac 6 --print 6`
+`ruby simulation.rb --runtime 24 --quiet 1 --buffers 100,100,100 --im 12 --dye 6 --sputt 6 --lac 6 --print 6`
 
 ![2](2.png)
 
@@ -18,7 +18,7 @@ Max buffers, maximum amount of machines
 
 Min buffers, minimum amount of machines
 
-`ruby simulation.rb --runtime 200 --quiet 1 --buffers 20,20,20 --im 4 --dye 2 --sputt 2 --lac 2 --print 2`
+`ruby simulation.rb --runtime 24 --quiet 1 --buffers 20,20,20 --im 4 --dye 2 --sputt 2 --lac 2 --print 2`
 
 ![3](3.png)
 

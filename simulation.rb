@@ -94,13 +94,13 @@ items = result[:items]
 
 class R < Struct.new(:amount, :total_time)
   def average
-    total_time / amount
+    ((total_time / amount.to_f) / 60.0).round
   end
 end
 
 start_time = items.first.created_at
 a = items.inject({}) do |result, item|
-  key = ((item.done_at.to_i - start_time.to_i) / (60 * 60.0)).round
+  key = ((item.done_at.to_i - start_time.to_i) / (60.0)).round
   result[key] ||= R.new(0, 0)
   result[key].total_time += item.production_time
   result[key].amount += 1
@@ -109,10 +109,10 @@ end
 
 Gnuplot.open do |gp|
   Gnuplot::Plot.new( gp ) do |plot|
-  
+    plot.yrange "[0:140]"
     plot.title  "Items"
-    plot.xlabel "Hour"
-    plot.ylabel "Average"
+    plot.xlabel "Minutes"
+    plot.ylabel "Average [Production time in min / item]"
     
     x = a.keys
     y = a.values.map(&:average)

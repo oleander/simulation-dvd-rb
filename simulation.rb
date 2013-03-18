@@ -9,7 +9,8 @@ options = {
     lac: 2,
     print: 2
   },
-  buffers: [20, 20, 20, Infinity]
+  buffers: [20, 20, 20, Infinity],
+  runtime: 2
 }
 
 OptionParser.new do |opts|
@@ -44,6 +45,14 @@ OptionParser.new do |opts|
     options[:machines][:lac] = v
   end
 
+  opts.on("-runtime", "--runtime", "Runtime in hours", Integer) do |v|
+    if v < 1
+      raise ArgumentError.new("Runtime must be > 0")
+    end
+
+    options[:runtime] = v
+  end
+
   opts.on("-buffers", "--buffers", "Buffers", Array) do |v|
     buffers = v.map(&:to_i)
     unless buffers.length == 3
@@ -62,4 +71,4 @@ OptionParser.new do |opts|
   end
 end.parse!
 
-DVD.new(options[:machines], options[:buffers])
+puts DVD.new(options[:machines], options[:buffers], options[:runtime]).execute!

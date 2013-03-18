@@ -64,8 +64,14 @@ class PrintingMachine < Machine
 
 end
 
+# class Buffers < Array
+#   def max_time_in_buffer
+    
+#   end
+# end
+
 class DVD < Production
-  def initialize(machines = nil, max_buffers = nil)
+  def initialize(machines = nil, max_buffers = nil, run_time = 2)
     # Machine 1: im
     # Machine 2: dry
     # Machine 3: sputt, coat
@@ -79,6 +85,8 @@ class DVD < Production
     }
 
     @max_buffers = max_buffers || [20, 20, 20, Infinity]
+
+    @run_time = run_time
     super()
   end
 
@@ -89,6 +97,8 @@ class DVD < Production
     @buffers = buffers = max_buffers.each_with_index.map do |max_size, index|
       Buffer.new(max_size, index)
     end
+
+    # @buffers = buffers = Buffers.new(@buffers)
 
     ####
     # Injection molding machines
@@ -167,14 +177,22 @@ class DVD < Production
     # Configuration
     ####
 
-    done_in 2.days  do
+    done_in @run_time.hours  do
       say(buffers.map(&:current_size).to_s, :red)
-      say("Average time for item #{buffers.last.average_time} in seconds", :blue)
       say("Amount of loops #{loops}")
+      say("Items per hour: #{(buffers.last.items.length / @run_time.to_f).round(2)}")
+      say("Average time for item in minutes: #{(buffers.last.average_time / (60)).round(2)}")
     end
 
     every_time do
-      say(buffers.map(&:current_size).to_s, :yellow)
+      # say(buffers.map(&:current_size).to_s, :yellow)
+    end
+
+    returns do
+      {
+        thruput: buffers.last.items.length / @run_time.to_f,
+        average_time: buffers.last.average_time / (60.0 * 60)
+      }
     end
 
     # delay(0.2.seconds)

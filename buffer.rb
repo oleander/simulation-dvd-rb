@@ -52,7 +52,7 @@ class Buffer
   end
 
   def average_time
-    if total_time = (items.map(&:production_time).inject(:+) || 0) == 0 or tems.length.zero?
+    if (total_time = items.map(&:production_time).inject(:+) || 0) == 0 or items.length.zero?
       raise "No items were produced"
     end
 

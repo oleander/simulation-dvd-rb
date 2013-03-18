@@ -23,58 +23,7 @@ class Production
     @start_time = Time.parse("00:00")
 
     jump_to(@start_time)
-
-    execute!
   end
-
-  protected
-
-  def debug(message, color = :blue)
-    days_passed = ((current_time - @start_time) / (60 * 60 * 24)).to_i
-    time = "%s day%s %s".green % [
-      days_passed.to_s,
-      days_passed > 1 || days_passed.zero? ? "s" : "",
-      current_time.strftime("%H:%M:%S")
-    ]
-    $stdout.puts "[%s] %s" % [
-      time,
-      message.to_s.send(color)
-    ]
-  end
-
-  def done_in(time, &block)
-    @done_in = time.from_now
-    @done_in_block = block
-  end
-
-  def delay(seconds)
-    @delay = seconds
-  end
-
-  def schedule(time, name, *args, &callback)
-    unless block_given?
-      callback = args.shift
-    end
-
-    args << current_time
-    @queue.push(@event.new(name, callback, args, rand(1000), time.from_now))
-  end
-
-  def done!
-    @done = true
-  end
-
-  alias_method :say, :debug
-
-  def current_time
-    Time.now
-  end
-
-  def every_time(&block)
-    @every_time = block
-  end
-
-  private
 
   def execute!
     setup
@@ -114,7 +63,62 @@ class Production
     if @done_in_block
       @done_in_block.call
     end
+
+    return @returns.call if @returns
   end
+
+  protected
+
+  def debug(message, color = :blue)
+    days_passed = ((current_time - @start_time) / (60 * 60 * 24)).to_i
+    time = "%s day%s %s".green % [
+      days_passed.to_s,
+      days_passed > 1 || days_passed.zero? ? "s" : "",
+      current_time.strftime("%H:%M:%S")
+    ]
+    $stdout.puts "[%s] %s" % [
+      time,
+      message.to_s.send(color)
+    ]
+  end
+
+  def done_in(time, &block)
+    @done_in = time.from_now
+    @done_in_block = block
+  end
+
+  def returns(&block)
+    @returns = block
+  end
+
+  def delay(seconds)
+    @delay = seconds
+  end
+
+  def schedule(time, name, *args, &callback)
+    unless block_given?
+      callback = args.shift
+    end
+
+    args << current_time
+    @queue.push(@event.new(name, callback, args, rand(1000), time.from_now))
+  end
+
+  def done!
+    @done = true
+  end
+
+  alias_method :say, :debug
+
+  def current_time
+    Time.now
+  end
+
+  def every_time(&block)
+    @every_time = block
+  end
+
+  private
 
   def jump_to(time)
     Timecop.freeze(time)

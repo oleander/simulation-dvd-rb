@@ -1,6 +1,9 @@
 require "optparse"
 require "gnuplot"
+require "hirb"
+require "pp"
 require_relative "./dvd"
+require_relative "./filter"
 
 options = {
   machines: {
@@ -89,24 +92,23 @@ OptionParser.new do |opts|
   end
 end.parse!
 
+
 result = DVD.new(options[:machines], options[:buffers], options[:runtime], options[:quiet]).execute!
-items = result[:items]
 
-class R < Struct.new(:amount, :total_time)
-  def average
-    ((total_time / amount.to_f) / 60.0).round
-  end
-end
+items = result[:output].items
 
-start_time = items.first.created_at
-a = items.inject({}) do |result, item|
-  key = ((item.done_at.to_i - start_time.to_i) / (60.0)).round
-  result[key] ||= R.new(0, 0)
-  result[key].total_time += item.production_time
-  result[key].amount += 1
-  result
-end
+stats = Filter.new(items, 250, options[:runtime]).process!
 
+pp stats
+# data = Struct.
+#   new(:average_thruput, :average_time, :variance_time, :variance_thruput).
+#   new(average_thruput, average_time, variance_time, variance_thruput)
+
+# extend Hirb::Console
+# Hirb.enable({pager: false})
+# table([data], fields: [:average_thruput, :average_time, :variance_time, :variance_thruput])
+
+abort
 Gnuplot.open do |gp|
   Gnuplot::Plot.new( gp ) do |plot|
     plot.yrange "[0:140]"

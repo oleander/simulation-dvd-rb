@@ -110,6 +110,7 @@ end
 Gnuplot.open do |gp|
   Gnuplot::Plot.new( gp ) do |plot|
     plot.yrange "[0:140]"
+    plot.xrange "[0:1440]"
     plot.title  "Items"
     plot.xlabel "Minutes"
     plot.ylabel "Average [Production time in min / item]"

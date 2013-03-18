@@ -192,7 +192,8 @@ class DVD < Production
       {
         thruput: buffers.last.items.length / @run_time.to_f,
         average_time: buffers.last.average_time / (60.0 * 60),
-        variance: buffers.last.variance / (60.0 * 60)
+        variance: buffers.last.variance / (60.0 * 60),
+        items: buffers.last.items
       }
     end
 

@@ -1,4 +1,5 @@
 require "optparse"
+require "gnuplot"
 require_relative "./dvd"
 
 options = {
@@ -54,6 +55,14 @@ OptionParser.new do |opts|
     options[:machines][:lac] = v
   end
 
+  opts.on("-print", "--print", "Print machine", Integer) do |v|
+    if v < 1
+      raise ArgumentError.new("Min amount of printing machines are 1")
+    end
+
+    options[:machines][:print] = v
+  end
+
   opts.on("-runtime", "--runtime", "Runtime in hours", Integer) do |v|
     if v < 1
       raise ArgumentError.new("Runtime must be > 0")
@@ -80,4 +89,37 @@ OptionParser.new do |opts|
   end
 end.parse!
 
-puts DVD.new(options[:machines], options[:buffers], options[:runtime], options[:quiet]).execute!
+result = DVD.new(options[:machines], options[:buffers], options[:runtime], options[:quiet]).execute!
+items = result[:items]
+
+class R < Struct.new(:amount, :total_time)
+  def average
+    total_time / amount
+  end
+end
+
+start_time = items.first.created_at
+a = items.inject({}) do |result, item|
+  key = ((item.done_at.to_i - start_time.to_i) / (60 * 60.0)).round
+  result[key] ||= R.new(0, 0)
+  result[key].total_time += item.production_time
+  result[key].amount += 1
+  result
+end
+
+Gnuplot.open do |gp|
+  Gnuplot::Plot.new( gp ) do |plot|
+  
+    plot.title  "Items"
+    plot.xlabel "Hour"
+    plot.ylabel "Average"
+    
+    x = a.keys
+    y = a.values.map(&:average)
+
+    plot.data << Gnuplot::DataSet.new( [x, y] ) do |ds|
+      ds.with = "linespoints"
+      ds.notitle
+    end
+  end
+end

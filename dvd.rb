@@ -71,7 +71,7 @@ end
 # end
 
 class DVD < Production
-  def initialize(machines = nil, max_buffers = nil, run_time = 2)
+  def initialize(machines = nil, max_buffers = nil, run_time = 2, quiet = false)
     # Machine 1: im
     # Machine 2: dry
     # Machine 3: sputt, coat
@@ -87,7 +87,7 @@ class DVD < Production
     @max_buffers = max_buffers || [20, 20, 20, Infinity]
 
     @run_time = run_time
-    super()
+    super(quiet)
   end
 
   def setup
@@ -191,7 +191,8 @@ class DVD < Production
     returns do
       {
         thruput: buffers.last.items.length / @run_time.to_f,
-        average_time: buffers.last.average_time / (60.0 * 60)
+        average_time: buffers.last.average_time / (60.0 * 60),
+        variance: buffers.last.variance / (60.0 * 60)
       }
     end
 

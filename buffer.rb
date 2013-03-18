@@ -94,4 +94,9 @@ class Buffer
   def inspect
     to_s
   end
+
+  def variance
+    time = average_time
+    items.map{|item| (item.production_time - time)**2}.inject(:+) / items.length
+  end
 end

@@ -10,7 +10,8 @@ options = {
     print: 2
   },
   buffers: [20, 20, 20, Infinity],
-  runtime: 2
+  runtime: 2,
+  quiet: false
 }
 
 OptionParser.new do |opts|
@@ -21,6 +22,14 @@ OptionParser.new do |opts|
       raise ArgumentError.new("Min amount of injection machines are 1")
     end
     options[:machines][:im] = v
+  end
+
+  opts.on("-quiet", "--quiet", "Quiet", Integer) do |v|
+    unless [0,1].include?(v)
+      raise ArgumentError.new("Valid options to quiet are 0 and 1")
+    end
+
+    options[:quiet] = v == 1
   end
 
   opts.on("-dye", "--dye", "Dye coating and drying machine", Integer) do |v|
@@ -71,4 +80,4 @@ OptionParser.new do |opts|
   end
 end.parse!
 
-puts DVD.new(options[:machines], options[:buffers], options[:runtime]).execute!
+puts DVD.new(options[:machines], options[:buffers], options[:runtime], options[:quiet]).execute!

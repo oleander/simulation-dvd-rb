@@ -14,12 +14,13 @@ end
 class Production
   attr_reader :loops
   
-  def initialize
+  def initialize(quiet = false)
     @queue      = PQueue.new { |a,b| a.time < b.time }
     @event      = Struct.new(:name, :callback, :arguments, :seed, :time)
     @delay      = nil
     @loops      = 0
     @done       = false
+    @quiet      = quiet
     @start_time = Time.parse("00:00")
 
     jump_to(@start_time)
@@ -56,7 +57,7 @@ class Production
       # Should we group them?
       if next_time != current_event_time and current_event_time
         sleep @delay if @delay
-        puts "\n"
+        debug("\n")
       end
     end
 
@@ -70,6 +71,7 @@ class Production
   protected
 
   def debug(message, color = :blue)
+    return if @quiet
     days_passed = ((current_time - @start_time) / (60 * 60 * 24)).to_i
     time = "%s day%s %s".green % [
       days_passed.to_s,

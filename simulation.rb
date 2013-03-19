@@ -2,6 +2,8 @@ require "optparse"
 require "gnuplot"
 require "hirb"
 require "pp"
+require "thread"
+semaphore = Mutex.new
 require_relative "./dvd"
 require_relative "./filter"
 
@@ -92,37 +94,68 @@ OptionParser.new do |opts|
   end
 end.parse!
 
+container = Struct.new(:thruput, :production, :variance_thruput, :variance_production)
+results  = []
+threads = []
 
-result = DVD.new(options[:machines], options[:buffers], options[:runtime], options[:quiet]).execute!
-
-items = result[:output].items
-
-stats = Filter.new(items, 250, options[:runtime]).process!
-
-pp stats
-# data = Struct.
-#   new(:average_thruput, :average_time, :variance_time, :variance_thruput).
-#   new(average_thruput, average_time, variance_time, variance_thruput)
-
-# extend Hirb::Console
-# Hirb.enable({pager: false})
-# table([data], fields: [:average_thruput, :average_time, :variance_time, :variance_thruput])
-
-abort
-Gnuplot.open do |gp|
-  Gnuplot::Plot.new( gp ) do |plot|
-    plot.yrange "[0:140]"
-    plot.xrange "[0:1440]"
-    plot.title  "Items"
-    plot.xlabel "Minutes"
-    plot.ylabel "Average [Production time in min / item]"
-    
-    x = a.keys
-    y = a.values.map(&:average)
-
-    plot.data << Gnuplot::DataSet.new( [x, y] ) do |ds|
-      ds.with = "linespoints"
-      ds.notitle
+(20..100).step(20) do |b1|
+  (20..100).step(20) do |b2|
+    (20..100).step(20) do |b3|
+      (4..5).each do |im|
+        (2..3).each do |dye|
+          (2..3).each do |sputt|
+            (2..3).each do |lac|
+              (2..3).each do |print|
+                threads << Thread.new do 
+                  options = {
+                    machines: {
+                      im: im,
+                      dye: dye,
+                      sputt: sputt,
+                      lac: lac,
+                      print: print
+                    },
+                    buffers: [b1, b2, b3, Infinity],
+                    runtime: 24*4,
+                    quiet: true
+                  }
+                  result = DVD.new(options[:machines], options[:buffers], options[:runtime], options[:quiet]).execute!
+                  items = result[:output].items
+                  stats = Filter.new(items, 250, options[:runtime]).process!
+                  semaphore.synchronize {
+                    puts "."
+                    results << container.new(stats[:thruput], stats[:production], stats[:variance_thruput], stats[:variance_production])
+                  }
+                end
+              end
+            end
+          end
+        end
+      end
     end
   end
 end
+
+threads.each(&:join)
+
+extend Hirb::Console
+Hirb.enable({pager: false})
+table(results, fields: [:thruput, :variance_thruput, :production, :variance_production])
+
+# Gnuplot.open do |gp|
+#   Gnuplot::Plot.new( gp ) do |plot|
+#     plot.yrange "[0:140]"
+#     plot.xrange "[0:1440]"
+#     plot.title  "Items"
+#     plot.xlabel "Minutes"
+#     plot.ylabel "Average [Production time in min / item]"
+    
+#     x = a.keys
+#     y = a.values.map(&:average)
+
+#     plot.data << Gnuplot::DataSet.new( [x, y] ) do |ds|
+#       ds.with = "linespoints"
+#       ds.notitle
+#     end
+#   end
+# end

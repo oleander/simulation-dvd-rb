@@ -315,14 +315,6 @@ class DVD < Production
     # --> start_machine_2
     # -> machine_2_conveyor_belt
     def machine_2_done(machine, item, _)
-      # Abort if:
-      #   machine currently broken?
-      #   machine is idle, a.k.a is has been broken but now fixed
-      # TODO: Add nicer method to check if machine has been broken?
-      if machine.broken? or machine.idle?
-        return say("Ooops, machine #{machine} was broken before finished")
-      end
-
       # Mark machine as idle
       machine.idle!
 

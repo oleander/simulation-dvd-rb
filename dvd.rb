@@ -373,6 +373,7 @@ class DVD < Production
       # Mark machine as idle
       machine.idle!
 
+      # TODO: Rename method schedule with first argument zero
       # Schedule conveyor belt done
       schedule(0, "One batch just finished in sputtering machine #{machine}", :start_coat_machine, items)
 

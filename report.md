@@ -13,6 +13,7 @@
 - Machine and machine group
 - Last buffer
 - How events are initialized
+- Insvängning
 
 ### Assumptions
 
@@ -162,3 +163,54 @@ Note 2: We've tried to do as few things as possible in one event handler, even i
     - Event handle #14, injection molding machine just broke down
   - Changes
     - Mark machine as fixed. This will put the fixed machine in the idle state
+
+### Warm up period to steady state
+
+To ensure that the data that was used in our calculations didn't fluxuated (TODO: is this a word?), which is usuly the case in the begining of a simulation, we tried to, both graphically and mathematically determen where when the system became stable.
+
+A parameter that nicely represents the current state of the system is the average production time of an item [min / item].
+
+We did not have the CPU power to look at hundreds of samples for finding the warm up period. Instead of looked at the edge cases.
+
+Clarification: The x-axis represents the elapsed time in minutes and the y-axis the average time in minutes for an item to pass through the system.
+
+- Max buffers, minimum amount of machines
+
+![1](resources/1.png)
+
+- Max buffers, maximum amount of machines
+
+![2](resources/2.png)
+
+- Min buffers, minimum amount of machines
+
+![3](resources/3.png)
+
+- Min buffers, maximum amount of machines
+
+![4](resources/4.png)
+
+It looks like image #3 has the higest warm up period of 200 minutes. Adding an extra 50 minutes as a margin would keep us out of the warm range.
+
+### Set up
+
+To ensure the *best outcome be started by defining the upper and lower limits. The current configuration for system is as follow.
+
+- Buffer capacities
+  - #1 as a max capacity of 20
+  - #2 as a max capacity of 20, by can only handle ha mutiple of 20
+  - #3 as a max capacity of 20
+- Amount of machines
+  - Injection molding: 4
+  - Dye coating: 2
+  - Sputtering: 2
+  - Lacquer coating: 2
+  - Printing: 2
+
+We call this set up the base line. This means that we won't go below any of the below numbers. 
+
+The upper limits was a bit more tricky. Increasing base line to infinity capacity wouldn't make any sence, nor would it be realistic. Accordint to the interview a realistic upper limits for the buffers would be 100, 100 and 100, but nothing were specified for the machines.
+
+According to our tests one simulation simulating 3 days took approximately 90 seconds using the base line.
+
+Increasing each buffer by 20 up to a hundred would take 64 itterations. We then want to try to increase the amount of machines with one. This would result in a total of 2048 itterations, which would take approximately two and a half day to run.

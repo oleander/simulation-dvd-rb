@@ -154,9 +154,6 @@ start = lambda {
   end
 }
 
-options = options[0..1]
-puts options.length
-
 1.times do
   start.call
 end

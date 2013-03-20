@@ -189,7 +189,7 @@ class DVD < Production
     end
 
     returns do
-      { output: buffers.last }
+      { buffers: buffers }
     end
 
     # delay(0.2.seconds)
@@ -402,6 +402,7 @@ class DVD < Production
       buffer = @buffers[2]
       buffer.unreserve(20)
       buffer.add(items)
+      # puts items.length
       items.length.times do
         schedule(0, "Trying to start machine 4", :start_machine_4)
       end
@@ -448,7 +449,7 @@ class DVD < Production
       machine.idle!
 
       # Restart the machine?
-      schedule(0, "Trying to restart #{machine.group}", :start_machine_4)
+      # schedule(0, "Trying to restart #{machine.group}", :start_machine_4)
     end
 
     # -> machine_1_fixed

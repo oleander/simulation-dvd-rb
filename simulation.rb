@@ -98,49 +98,56 @@ container = Struct.new(:thruput, :production, :variance_thruput, :variance_produ
 results  = []
 threads = []
 
-(20..100).step(20) do |b1|
-  (20..100).step(20) do |b2|
-    (20..100).step(20) do |b3|
-      (4..5).each do |im|
-        (2..3).each do |dye|
-          (2..3).each do |sputt|
-            (2..3).each do |lac|
-              (2..3).each do |print|
-                threads << Thread.new do 
-                  options = {
-                    machines: {
-                      im: im,
-                      dye: dye,
-                      sputt: sputt,
-                      lac: lac,
-                      print: print
-                    },
-                    buffers: [b1, b2, b3, Infinity],
-                    runtime: 24*4,
-                    quiet: true
-                  }
-                  result = DVD.new(options[:machines], options[:buffers], options[:runtime], options[:quiet]).execute!
-                  items = result[:output].items
-                  stats = Filter.new(items, 250, options[:runtime]).process!
-                  semaphore.synchronize {
-                    puts "."
-                    results << container.new(stats[:thruput], stats[:production], stats[:variance_thruput], stats[:variance_production])
-                  }
-                end
-              end
-            end
-          end
-        end
-      end
-    end
-  end
+# (20..100).step(20) do |b1|
+#   (20..100).step(20) do |b2|
+#     (20..100).step(20) do |b3|
+#       (4..5).each do |im|
+#         (2..3).each do |dye|
+#           (2..3).each do |sputt|
+#             (2..3).each do |lac|
+#               (2..3).each do |print|
+#                 threads << Thread.new do 
+#                   options = {
+#                     machines: {
+#                       im: im,
+#                       dye: dye,
+#                       sputt: sputt,
+#                       lac: lac,
+#                       print: print
+#                     },
+#                     buffers: [b1, b2, b3, Infinity],
+#                     runtime: 24*4,
+#                     quiet: true
+#                   }
+#                   result = DVD.new(options[:machines], options[:buffers], options[:runtime], options[:quiet]).execute!
+#                   items = result[:output].items
+#                   stats = Filter.new(items, 250, options[:runtime]).process!
+#                   semaphore.synchronize {
+#                     puts "."
+#                     results << container.new(stats[:thruput], stats[:production], stats[:variance_thruput], stats[:variance_production])
+#                   }
+#                 end
+#               end
+#             end
+#           end
+#         end
+#       end
+#     end
+#   end
+# end
+
+buffers = DVD.new(options[:machines], options[:buffers], options[:runtime], options[:quiet]).execute!
+
+buffers.each do |b|
+  b.instance_eval { @queue = Queue.new }
 end
 
-threads.each(&:join)
+pp buffers
+# threads.each(&:join)
 
-extend Hirb::Console
-Hirb.enable({pager: false})
-table(results, fields: [:thruput, :variance_thruput, :production, :variance_production])
+# extend Hirb::Console
+# Hirb.enable({pager: false})
+# table(results, fields: [:thruput, :variance_thruput, :production, :variance_production])
 
 # Gnuplot.open do |gp|
 #   Gnuplot::Plot.new( gp ) do |plot|

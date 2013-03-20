@@ -8,6 +8,11 @@ class Buffer
     @size    = size
     @reserved = 0
     @queue =  Queue.new
+    @ness = {
+      fullness: 0,
+      emptyness: 0,
+      do: 0 
+    }
   end
 
   def add(*items)
@@ -24,6 +29,17 @@ class Buffer
     end
 
     amount.times.map { @queue.pop(true) }
+  end
+
+  def inc(what)
+    @ness[what] += 1
+  end
+
+  def ness
+    {
+      fullness: (@ness[:fullness] / @ness[:do].to_f).round(3),
+      emptyness: (@ness[:emptyness] / @ness[:do].to_f).round(3)
+    }
   end
 
   def increment!(amount = 1)
@@ -88,7 +104,7 @@ class Buffer
   end
 
   def to_s
-    "<Buffer id: #{@id}, current_size: #{current_size}, size: #{@size}>"
+    "<Buffer id: #{@id}, current_size: #{current_size}, size: #{@size}, ness=#{ness.inspect}>"
   end
 
   def inspect

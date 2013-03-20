@@ -94,9 +94,12 @@ OptionParser.new do |opts|
   end
 end.parse!
 
-container = Struct.new(:thruput, :production, :variance_thruput, :variance_production)
-results  = []
-threads = []
+# container = Struct.new(:thruput, :production, :variance_thruput, :variance_production)
+# results  = []
+# threads = []
+# container = Struct.new(:thruput, :production, :variance_thruput, :variance_production)
+# results  = []
+# threads = []
 
 # (20..100).step(20) do |b1|
 #   (20..100).step(20) do |b2|
@@ -136,18 +139,29 @@ threads = []
 #   end
 # end
 
+# <<<<<<< Updated upstream
 buffers = DVD.new(options[:machines], options[:buffers], options[:runtime], options[:quiet]).execute!
 
-buffers.each do |b|
-  b.instance_eval { @queue = Queue.new }
-end
+# buffers.each do |b|
+#   b.instance_eval { @queue = Queue.new }
+# end
 
-pp buffers
+# pp buffers
 # threads.each(&:join)
 
 # extend Hirb::Console
 # Hirb.enable({pager: false})
 # table(results, fields: [:thruput, :variance_thruput, :production, :variance_production])
+# =======
+# threads.each(&:join)
+
+# extend Hirb::Console
+# Hirb.enable({pager: false})
+# table(results, fields: [:thruput, :variance_thruput, :production, :variance_production])
+
+DVD.new(options[:machines], options[:buffers], options[:runtime], options[:quiet]).execute!
+
+# >>>>>>> Stashed changes
 
 # Gnuplot.open do |gp|
 #   Gnuplot::Plot.new( gp ) do |plot|

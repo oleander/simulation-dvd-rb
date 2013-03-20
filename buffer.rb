@@ -8,6 +8,11 @@ class Buffer
     @size    = size
     @reserved = 0
     @queue =  Queue.new
+    @ness = {
+      do: 0,
+      fullness: 0,
+      emptyness: 0
+    }
   end
 
   def add(*items)
@@ -32,6 +37,10 @@ class Buffer
 
   def decrement!(amount = 1)
     raise ArgumentError.new("#decrement! is not in use, RTFM")
+  end
+
+  def inc(what)
+    @ness[what] += 1
   end
 
   def has_space_for?(amount, options = {})
@@ -67,6 +76,13 @@ class Buffer
     @queue.empty?
   end
 
+  def ness
+    {
+      fullness: (@ness[:fullness].to_f / @ness[:do]).round(3),
+      emptyness: (@ness[:emptyness].to_f / @ness[:do]).round(3)
+    }
+  end
+
   def full_including_reserved?
     @queue.size + @reserved == size
   end
@@ -88,7 +104,7 @@ class Buffer
   end
 
   def to_s
-    "<Buffer id: #{@id}, current_size: #{current_size}, size: #{@size}>"
+    "<Buffer id: #{@id}, current_size: #{current_size}, size: #{@size}, ness=#{ness}>"
   end
 
   def inspect
@@ -98,5 +114,14 @@ class Buffer
   def variance
     time = average_time
     items.map{|item| (item.production_time - time)**2}.inject(:+) / items.length
+  end
+
+  def as_json
+    {
+      id: id,
+      ness: ness,
+      current_size: current_size,
+      size: @size
+    }
   end
 end

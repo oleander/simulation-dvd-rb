@@ -32,15 +32,27 @@ class MachineGroup < Struct.new(:machines, :id, :process_time, :p_buffer, :n_buf
       status = false
       errors << "no machines avalible"
     end
-    
+      
+    if status
+      if p_buffer
+        p_buffer.inc(:do)
+      end
+    end
+
     # 2.
-    if p_buffer and not p_buffer.can_take_items?(amount)
+    if p_buffer and not p_buffer.can_take_items?(amount) and status
+      p_buffer.inc(:emptyness)
       status = false
       errors << "previous buffer is empty"
     end
 
+    if status
+      n_buffer.inc(:do)
+    end
+
     # 3.
-    unless n_buffer.has_space_for?(amount, include_reserved: true)
+    if not n_buffer.has_space_for?(amount, include_reserved: true) and status
+      n_buffer.inc(:fullness)
       status = false
       errors << "next buffer is full"
     end

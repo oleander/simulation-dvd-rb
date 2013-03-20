@@ -9,9 +9,6 @@
 
 ### Explain
 
-- Reserve next buffer
-- Machine and machine group
-- Last buffer
 - How events are initialized
 - Insvängning
 - Förklara hur vi valde dis.
@@ -255,19 +252,18 @@ The implementation is done in the programming language Ruby. It's now super fast
 
 We went with a object oriented design, which encapsulates all logic into classes. This made a huge diffrentce when it came to implementing the event handlers. I most cases the amount of code in the psudo example above and the real implementation is almost a one to one mapping.
 
-Below is a ER representation of the object model. 
+#### Classes
 
 ![er](resources/er-dvd.png)
 
-
-#### MachineGroup
+##### MachineGroup
 
 This class represents a group of machines of a certain kind, for example a printing machine. As soon as a machine within a specific group wants to be started the machine group is asked. It will try to start a machine given that the following conditions are satisfied:
 
 - Is there enough room in the next and previous buffer?
 - Do we have any machines avalible?
 
-#### Machine
+##### Machine
 
 Represents one single machine with in a group. A machine move between three different states.
 
@@ -275,7 +271,7 @@ Represents one single machine with in a group. A machine move between three diff
 - Started - The macine is currently busy and can therefore not be started
 - Broken - The machine is currently broken and can therefore not be started
 
-#### Buffer
+##### Buffer
 
 Keeps track on all items. There are two diffrent buffers, one normal that has a maximum size and one sizeless buffer that acts as output for the system. The endless buffer is connected to machine 4.
 
@@ -285,3 +281,31 @@ A buffer knows how many time a machine has *tried* to interact with it using the
 - Emptyness - The amount of times a machine wanted to take items but could due to emptyness.
 
 These two parameters are important in trying to find the bottleneck in our system. A high *emptyness* value in a buffer means that we should increase the buffer size or the amount of machines in previous steps. A high *fullness* value in a buffer means that there is a bottleneck to the right. Increasing buffer or/and the amount of machines might solve the problem.
+
+###### Reservations
+
+Imagine this problem
+
+1. [0:00] Buffer #1 is almost full, it can only take one more item
+2. [0:00] Machine #1 that uses buffer #1 check to see if buffer is full. It's not so it starts and schedules to be done in 15 min.
+3. [0:05] Machine #2 that also uses buffer #1, it check buffer #1 and draws the same conclusions. It starts it self and schedules to be done in 2 min.
+4. [0:07] Machine #2 is now done, it adds one item to buffer #1, which is now full.
+5. [0:15] Machine #1 is now done, but buffer #1 is full so everyting was in vain.
+
+What we could do here in instead is to *reserve* one item in step #2 and unreserve one item in step #5. The outcome would be that machine #2 never starts.
+
+This is solution we've used in our implementation.
+
+This is how it would look from machine #1 point of view *when is comes to dealing with buffers*.
+
+- On start
+  - Start if previous buffer count > 0 and if next buffer is not full, including reserved items
+  - Reserve one item in next buffer
+  - Decrease previous buffer by one
+- When done
+  - Unreserve 1 item in next buffer
+  - Add one item to next buffer
+
+##### Item
+
+Encapsulates the time from which the item was created and added to the *output buffer*.

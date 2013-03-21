@@ -183,20 +183,29 @@ We want to keep the the production time and buffer misses as low and throughput 
 
 #### Step 4 – Distributions
 
-![qq-plot](qq-plot.jpeg)
+#TODO: DISTRIBUTIONS MACHINES BREAKDOWN
+
+We created histograms for the processing times of machine groups 1, 2 and 4. From these diagrams we tried to determine which probability distributions each data set belonged to.
 
 ##### Injection molding
 
-Exponential distribution, lambda = 58.26
+
 
 ![1](resources/proc1.jpeg)
 
+Exponential distribution, lambda = 1/58.26
+The first histogram appeared to show an exponential distribution. The mean value of the data points was 58.26, meaning that the lambda parameter was the inverse of this.  
+
 ##### Dye coating
+![2](resources/proc2.jpeg)
+![qq-plot](qq-plot.jpeg)
 
 Gamma distribution, scale = 9, shape = 3. The histogram for the second machine group indicated a gamma distribution. We tried to find parameters using a Q-Q-plot and a trial-and-error approach. With values 9 for scale and 3 for shape, we estimated that we had a decent fit.
 
-![2](resources/proc2.jpeg)
+##### Printing
 ![3](resources/proc4.jpeg)
+
+The processing times of the last machine group seemed to be evenly distributed between 20 and 30 seconds.
 
 #### Step 5 – Implementation
 

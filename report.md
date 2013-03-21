@@ -183,6 +183,20 @@ We want to keep the the production time and buffer misses as low and throughput 
 
 #### Step 4 – Distributions
 
+
+##### Injection molding
+
+Exponential distribution, lambda = 58.26
+
+![1](resources/proc1.jpeg)
+
+##### Dye coating
+
+Gamma distribution, scale = 9, shape = 3. The histogram for the second machine group indicated a gamma distribution. We tried to find parameters using a Q-Q-plot and a trial-and-error approach. With values 9 for scale and 3 for shape, we estimated that we had a decent fit.
+
+![2](resources/proc2.jpeg)
+![3](resources/proc4.jpeg)
+
 #### Step 5 – Implementation
 
 All logic related to a machine is encapsulated in its own event handler. This means that this event might be called even tho the machine group it self isn't ready. So for example if machine #2 has started and therefor decresed buffer #1 by one (the buffer used by machine #1 and machine #2) it will, without checking the state of machine group #2, try to start #1 by calling event handler #1. This structure means that we can keep all logic for one machine group contained within one event handler.
@@ -318,4 +332,4 @@ Note: The x-axis represents the elapsed time in minutes and the y-axis the avera
 
 ![4](resources/4.png)
 
-It looks like image #3 has the highest warm up period of 200 minutes. Adding an extra 50 minutes as a margin would keep us out of the warm range.
+It looks like image #1 and #2 has the highest warm up period of 200 minutes. Adding an extra 50 minutes as a margin would keep us out of the warm up range.

@@ -95,70 +95,66 @@ OptionParser.new do |opts|
   end
 end.parse!
 
-# container = Struct.new(:thruput, :production, :variance_thruput, :variance_production)
-# results  = []
-# threads = []
-# options = []
+results  = []
+threads = []
+options = []
 
-# (20..100).step(40) do |b1|
-#   (20..100).step(40) do |b2|
-#     (20..100).step(40) do |b3|
-#       (4..5).each do |im|
-#         (2..3).each do |dye|
-#           (2..3).each do |sputt|
-#             (2..3).each do |print|
-#               options << {
-#                 machines: {
-#                   im: im,
-#                   dye: dye,
-#                   sputt: sputt,
-#                   lac: 2, # Isn't used
-#                   print: print
-#                 },
-#                 buffers: [b1, b2, b3, Infinity],
-#                 runtime: 24*4,
-#                 quiet: true
-#               }
-#             end
-#           end
-#         end
-#       end
-#     end
-#   end
-# end
+(20..100).step(40) do |b1|
+  (20..100).step(40) do |b2|
+    (20..100).step(40) do |b3|
+      # (4..5).each do |im|
+      #   (2..3).each do |dye|
+      #     (2..3).each do |sputt|
+      #       (2..3).each do |print|
+              options << {
+                machines: {
+                  im: 4,
+                  dye: 2,
+                  sputt: 2,
+                  lac: 2, # Isn't used
+                  print: 2
+                },
+                buffers: [b1, b2, b3, Infinity],
+                runtime: 24*4,
+                quiet: true
+              }
+      #       end
+      #     end
+      #   end
+      # end
+    end
+  end
+end
 
-option = options
-buffers = DVD.new(option[:machines], option[:buffers], option[:runtime], true).execute![:buffers]
+threads = []
+start = lambda {
+  # threads << Thread.new do
+    option = nil
+    next if options.empty?
+    semaphore.synchronize {
+      option = options.shift
+    }
 
-# threads = []
-# start = lambda {
-#   threads << Thread.new do
-#     option = nil
-#     next if options.empty?
-#     semaphore.synchronize {
-#       option = options.shift
-#     }
+    buffers = DVD.new(option[:machines], option[:buffers], option[:runtime], true).execute![:buffers]
+    # pp buffers.last.items.map(&:done_at)
+    items = buffers.last.items
+    stats = Filter.new(items, 250, option[:runtime]).process!
+    # semaphore.synchronize {
+      puts option.merge(stats).merge({
+        buffers: buffers.map(&:as_json)
+      }).to_json
 
-#     buffers = DVD.new(option[:machines], option[:buffers], option[:runtime], false).execute![:buffers]
-#     # pp buffers.last.items.map(&:done_at)
-#     items = buffers.last.items
-#     stats = Filter.new(items, 250, option[:runtime]).process!
-#     semaphore.synchronize {
-#       puts option.merge(stats).merge({
-#         buffers: buffers.map(&:as_json)
-#       }).to_json
+      puts "----------------"
+      # results << container.new(stats[:thruput], stats[:production], stats[:variance_thruput], stats[:variance_production])
+      # puts results.length
+    # }
 
-#       puts "----------------"
-#       # results << container.new(stats[:thruput], stats[:production], stats[:variance_thruput], stats[:variance_production])
-#       # puts results.length
-#     }
-
-#     start.call
-#   end
-# }
+    start.call
+  # end
+}
 
 # 1.times do
-#   start.call
+  start.call
 # end
 
 # threads.each(&:join)

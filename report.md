@@ -309,3 +309,21 @@ This is how it would look from machine #1 point of view *when is comes to dealin
 ##### Item
 
 Encapsulates the time from which the item was created and added to the *output buffer*.
+
+### How it's made
+
+#### Step 1 – Performance measurements
+
+#### Step 2 – States
+
+#### Step 4 – Event graph
+
+![event-graph](resources/event-graph.png)
+
+#### Step 5 – Distributions
+
+#### Step 6 – Implementation
+
+#### Step 7 - Simulation
+
+#### Step 8 – Output analysis

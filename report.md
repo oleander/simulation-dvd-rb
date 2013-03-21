@@ -9,10 +9,6 @@
 
 ### Explain
 
-- How events are initialized
-- Insvängning
-- Förklara hur vi valde dis.
-- Förklara vad som händer med en item som fastnar i sputt
 - Förklara att vi inte har prestanda för att köra allt tester vi behöver
 - Definera bästa utfall
 
@@ -22,9 +18,11 @@ We're made a few assumptions regardning the third machine. We've tried to make l
 
 #### Sputtering
 
-This part of the machine can handle one bantch à 20 items at the time. As soon as every item as been processed (20 * 10 seconds) the batch is being passed to the lacquer coating part. The coating machine can't crash nor stall, it's also faster than sputtering. This means that we lacquer coating must always be ready when sputtering is done.
+This part of the machine can handle one batch à 20 items at the time. As soon as all items in one batch has been processed (20 * 10 seconds) the batch is passed to the lacquer coating machine. The coating machine can't crash nor stall, it's also faster than sputtering. This means that that the sputtering machine doesn't have to wait for the lacquer coating machine to be done.
 
-- TODO: Explain items being stuck
+Items in the sputtering machine can get stuck. Everytime an item is stuck, the machine stalls. This means that a batch as a whole will be delayed for further processing. In our simulation the amount of items that is going to get stuck is calculated *before* the event is scheduled. Each stuck item delayes the machine with 5 minutes. 
+
+Read more about the distribution used in the *Distributions* sections below.
 
 #### Lacquer coating
 
@@ -309,8 +307,7 @@ Everyting were then but into a table and sorted by ascending thruput and descend
 
 ### Warm up period to steady state
 
-To ensure that the data that was used in our calculations didn't fluxuated (TODO: is this a word?), which is usuly the case in the begining of a simulation, we tried to, both graphically and mathematically determen where and when the system became stable. 
-
+To ensure that the output data used in our calculations doesn't fluxuated, which is usualy the case in the begining of a simulation, we graphically tried to determine where and when the system became stable.
 
 Complex systems often go through a warm up period before they reach a steady state or some sort of cyclic fluctuations. To make sure that this warm up period did not influence our output values, we ran the simulations with both maximal and minimal parameter values and graphically determined a point in time where all the systems had completed their initial warm up. This time plus a margin of XXX was used as the starting point for our measurements.
 

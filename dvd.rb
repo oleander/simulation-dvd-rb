@@ -449,7 +449,7 @@ class DVD < Production
       machine.idle!
 
       # Restart the machine?
-      # schedule(0, "Trying to restart #{machine.group}", :start_machine_4)
+      schedule(0, "Trying to restart #{machine.group}", :start_machine_4)
     end
 
     # -> machine_1_fixed

@@ -3,6 +3,7 @@ require "optparse"
 #require "hirb"
 require "pp"
 require "thread"
+require "json"
 semaphore = Mutex.new
 require_relative "./dvd"
 require_relative "./filter"
@@ -97,71 +98,76 @@ end.parse!
 # container = Struct.new(:thruput, :production, :variance_thruput, :variance_production)
 # results  = []
 # threads = []
-# container = Struct.new(:thruput, :production, :variance_thruput, :variance_production)
-# results  = []
-# threads = []
 
-# (20..100).step(20) do |b1|
-#   (20..100).step(20) do |b2|
-#     (20..100).step(20) do |b3|
-#       (4..5).each do |im|
-#         (2..3).each do |dye|
-#           (2..3).each do |sputt|
-#             (2..3).each do |lac|
-#               (2..3).each do |print|
-#                 threads << Thread.new do 
-#                   options = {
-#                     machines: {
-#                       im: im,
-#                       dye: dye,
-#                       sputt: sputt,
-#                       lac: lac,
-#                       print: print
-#                     },
-#                     buffers: [b1, b2, b3, Infinity],
-#                     runtime: 24*4,
-#                     quiet: true
-#                   }
-#                   result = DVD.new(options[:machines], options[:buffers], options[:runtime], options[:quiet]).execute!
-#                   items = result[:output].items
-#                   stats = Filter.new(items, 250, options[:runtime]).process!
-#                   semaphore.synchronize {
-#                     puts "."
-#                     results << container.new(stats[:thruput], stats[:production], stats[:variance_thruput], stats[:variance_production])
-#                   }
-#                 end
-#               end
-#             end
-#           end
-#         end
-#       end
-#     end
-#   end
-# end
+options = []
 
-# <<<<<<< Updated upstream
-buffers = DVD.new(options[:machines], options[:buffers], options[:runtime], options[:quiet]).execute!
+(20..100).step(40) do |b1|
+  (20..100).step(40) do |b2|
+    (20..100).step(40) do |b3|
+      (4..5).each do |im|
+        (2..3).each do |dye|
+          (2..3).each do |sputt|
+            (2..3).each do |print|
+              options << {
+                machines: {
+                  im: im,
+                  dye: dye,
+                  sputt: sputt,
+                  lac: 2, # Isn't used
+                  print: print
+                },
+                buffers: [b1, b2, b3, Infinity],
+                runtime: 24*4,
+                quiet: true
+              }
+            end
+          end
+        end
+      end
+    end
+  end
+end
 
-# buffers.each do |b|
-#   b.instance_eval { @queue = Queue.new }
-# end
+threads = []
+start = lambda {
+  threads << Thread.new do
+    option = nil
+    next if options.empty?
+    semaphore.synchronize {
+      option = options.shift
+    }
+
+    buffers = DVD.new(option[:machines], option[:buffers], option[:runtime], option[:quiet]).execute![:buffers]
+    # pp buffers.last.items.map(&:done_at)
+    items = buffers.last.items
+    stats = Filter.new(items, 250, option[:runtime]).process!
+    semaphore.synchronize {
+      puts option.merge(stats).merge({
+        buffers: buffers.map(&:as_json)
+      }).to_json
+
+      puts "----------------"
+      # results << container.new(stats[:thruput], stats[:production], stats[:variance_thruput], stats[:variance_production])
+      # puts results.length
+    }
+
+    start.call
+  end
+}
+
+1.times do
+  start.call
+end
+
+threads.each(&:join)
+
+# extend Hirb::Console
+# Hirb.enable({pager: false})
+# table(results, fields: [:thruput, :variance_thruput, :production, :variance_production])
+
+# buffers = DVD.new(options[:machines], options[:buffers], options[:runtime], options[:quiet]).execute!
 
 # pp buffers
-# threads.each(&:join)
-
-# extend Hirb::Console
-# Hirb.enable({pager: false})
-# table(results, fields: [:thruput, :variance_thruput, :production, :variance_production])
-# =======
-# threads.each(&:join)
-
-# extend Hirb::Console
-# Hirb.enable({pager: false})
-# table(results, fields: [:thruput, :variance_thruput, :production, :variance_production])
-
-DVD.new(options[:machines], options[:buffers], options[:runtime], options[:quiet]).execute!
-
-# >>>>>>> Stashed changes
 
 # Gnuplot.open do |gp|
 #   Gnuplot::Plot.new( gp ) do |plot|

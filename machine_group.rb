@@ -32,11 +32,21 @@ class MachineGroup < Struct.new(:machines, :id, :process_time, :p_buffer, :n_buf
       status = false
       errors << "no machines avalible"
     end
+<<<<<<< HEAD
 
     if status and p_buffer
       p_buffer.inc(:do)
     end
     
+=======
+      
+    if status
+      if p_buffer
+        p_buffer.inc(:do)
+      end
+    end
+
+>>>>>>> e761754
     # 2.
     if p_buffer and not p_buffer.can_take_items?(amount) and status
       p_buffer.inc(:emptyness)

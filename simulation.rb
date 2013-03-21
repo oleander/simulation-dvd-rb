@@ -1,6 +1,6 @@
 require "optparse"
-require "gnuplot"
-require "hirb"
+#require "gnuplot"
+#require "hirb"
 require "pp"
 require "thread"
 require "json"

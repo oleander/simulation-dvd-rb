@@ -127,26 +127,8 @@ end.parse!
 #   end
 # end
 
-class R < Struct.new(:amount, :total_time)
-  def average
-    ((total_time / amount.to_f) / 60.0).round
-  end
-end
-
 option = options
 buffers = DVD.new(option[:machines], option[:buffers], option[:runtime], true).execute![:buffers]
-
-items = buffers.last.items
-
-start_time = items.first.done_at
-
-a = items.inject({}) do |result, item|
-  key = ((item.done_at.to_i - start_time.to_i) / (60.0)).round
-  result[key] ||= R.new(0, 0)
-  result[key].total_time += item.production_time
-  result[key].amount += 1
-  result
-end
 
 # threads = []
 # start = lambda {
@@ -180,23 +162,3 @@ end
 # end
 
 # threads.each(&:join)
-
-# extend Hirb::Console
-# Hirb.enable({pager: false})
-# table(results, fields: [:thruput, :variance_thruput, :production, :variance_production])
-
-# buffers = DVD.new(options[:machines], options[:buffers], options[:runtime], options[:quiet]).execute!
-
-# pp buffers
-
-class R < Struct.new(:amount, :total_time)
-  def average
-    ((total_time / amount.to_f) / 60.0).round
-  end
-end
-
-option = options
-puts option
-buffers = DVD.new(option[:machines], option[:buffers], option[:runtime], option[:quiet]).execute![:buffers]
-puts buffers
-items = buffers.last.items

@@ -1,5 +1,19 @@
 ## Report
 
+### Problem description
+The task was to simulate the production of DVDs at a factory. The production line consists of four productions steps:
+
+
+#1 Injection molding
+#2 Dye coating and drying
+#3 Sputtering, lacquer coating, drying
+#4 Printing and finishing 
+
+The performance measures of the system are throughput time and production per hour and the parameters that can be adjusted to optimize these values are buffer and batch sizes. The current maximum capacity of all the buffers is 20 items. The sputtering machine only handles batches of size 20.
+
+The injection molding machine breaks down on a regular basis, in which case it needs to be repaired. The sputtering machine can get stuck, which makes cleaning necessary, but leaves the items intact. 
+
+
 ### Implementation
 
 #### Machine Groups
@@ -38,7 +52,7 @@ A DVD factory wants to optimize there production by keeping the ratio between sy
 
 ### How it's made
 
-#### Step 1 – Performance measurements [fixa def. av throughput och production/hoour!!]
+#### Step 1 – Performance measurements [TODO: fixa def. av throughput och production/hoour!!]
 
 Two key aspects were at a minimum to be analysed; throughput time, production time and miss rate on buffers. Throughput time being the amount if items produced per time unit, production time the total time for an item to be produced and miss rate on buffers the total amount of times a buffer could not receive new items or could not deliver new items to surounding machines.
 
@@ -185,6 +199,8 @@ We want to keep the the production time and buffer misses as low and throughput 
 
 #TODO: DISTRIBUTIONS MACHINES BREAKDOWN
 
+We generated random numbers from exponential distributions to simulate both time elapsed between breakdowns of our injection molding machines and the time to repair of , since exponential distributions rep 
+
 We created histograms for the processing times of machine groups 1, 2 and 4. From these diagrams we tried to determine which probability distributions each data set belonged to.
 
 ##### Injection molding
@@ -194,7 +210,7 @@ We created histograms for the processing times of machine groups 1, 2 and 4. Fro
 ![1](resources/proc1.jpeg)
 
 Exponential distribution, lambda = 1/58.26
-The first histogram appeared to show an exponential distribution. The mean value of the data points was 58.26, meaning that the lambda parameter was the inverse of this.  
+The first histogram appeared to show an exponential distribution. The mean value of the data points was 58.26 and the lambda parameter consequently the inverse of this.  
 
 ##### Dye coating
 ![2](resources/proc2.jpeg)

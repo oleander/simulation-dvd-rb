@@ -10,7 +10,7 @@ Infinity = 1/0.0
 # (:machines, :id, :process_time, :p_buffer, :n_buffer)
 class InjectionMoldingMachineGroup < MachineGroup
   def time_to_fix
-    (15.times.map{ rand(2) }.inject(:+) * 4).minutes
+    Calculation.exp(30.minutes)
   end
 
   def time_to_breakdown

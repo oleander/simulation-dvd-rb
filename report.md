@@ -47,7 +47,7 @@ We want to keep the the production time and buffer misses low and throughput tim
   - Current items
   - Reserved items
   - Amount of misses related to 'fullness'
-  - Amount of misses related to 'emptyness'
+  - Amount of misses related to 'emptiness'
 - Machine
   - State (idle, break, start)
 - Item
@@ -237,9 +237,9 @@ Keeps track on all items. There are two diffrent buffers, one normal that has a 
 A buffer knows how many time a machine has *tried* to interact with it using the below params.
 
 - Fullness - The amount of times a machine wanted to reserve items but could due to fullness.
-- Emptyness - The amount of times a machine wanted to take items but could due to emptyness.
+- emptiness - The amount of times a machine wanted to take items but could due to emptiness.
 
-These two parameters are important in trying to find the bottleneck in our system. A high *emptyness* value in a buffer means that we should increase the buffer size or the amount of machines in previous steps. A high *fullness* value in a buffer means that there is a bottleneck to the right. Increasing buffer or/and the amount of machines might solve the problem.
+These two parameters are important in trying to find the bottleneck in our system. A high *emptiness* value in a buffer means that we should increase the buffer size or the amount of machines in previous steps. A high *fullness* value in a buffer means that there is a bottleneck to the right. Increasing buffer or/and the amount of machines might solve the problem.
 
 ####### Item
 
@@ -290,7 +290,7 @@ The upper limits was a bit more tricky. Increasing the base line to infinity cap
 
 To get a proper sample size one could either run multiply times for a short perioid of time or run the simlulation a bit longer but only once. We went with running the simulation for a longer period, in our case 3 days. According to our tests one simulation simulating 3 days took approximately 90 seconds using the base line.
 
-Increasing each buffer by 40 up to a hundred for each buffer would take 27 itterations. We then wanted to try to increase the amount of machines with one. This would result in a total of 432 itterations, which would take approximately 11 hours to run.
+Increasing each buffer by 40 up to a hundred for each buffer would take 27 itterations, which would take 40 minutes to run.
 
 In each iiteration the following data where calculated and collected.
 
@@ -302,9 +302,9 @@ In each iiteration the following data where calculated and collected.
 
 Everyting were then but into a table and sorted by ascending thruput and descending production. The top 10 results can be found in an apendix (TODO: add apendix).
 
-#### Step 7 – Output analysis
+#### Step 7 – Analysis
 
-### Warm up period to steady state
+##### Warm up period to steady state
 
 To ensure that the output data used in our calculations doesn't fluxuated, which is usualy the case in the begining of a simulation, we graphically tried to determine where and when the system became stable.
 
@@ -333,3 +333,88 @@ Note: The x-axis represents the elapsed time in minutes and the y-axis the avera
 ![4](resources/4.png)
 
 It looks like image #1 and #2 has the highest warm up period of 200 minutes. Adding an extra 50 minutes as a margin would keep us out of the warm up range.
+
+##### Output
+
+###### Run 1
+
+Attatchments #1 is the result of one simulation for 4 days using 27 diffrent buffer sizes. The output is sorted by descending production time. 
+
+According test 3 (counted from above) the last buffer has an fullness rate of ~ 46% when set to size 20. Increasing the buffer size to 60 (according to #1 and #2) would lower the rate to about 8%. It looks in other words like we could increase the the last buffer to size 40.
+
+The diffrence in production rate between #1 and #2 are quite small, but the buffer sizes differs at bit. Going with the smallest buffer size combined with our ajustment to buffer #3 would be our new parameters for the next simulation.
+
+A note: Buffer #2 for the top 3 results has a very high *emptiness* rate. This is probably caused by previous machines being to slow or the buffer being to big. A soluton would be to scale up machine #1 and #2. Scaling the machines is quite expencive, so we will try to avoid doing so. Another, cheaper soluton would be to decrease buffer #2.
+
+Configurations for the next simulation.
+
+- Buffer #1: 20
+- Buffer #2: 40
+- Buffer #3: 40
+
+###### Run 2
+
+Attachment #2.
+
+As noted above buffer #2 is mostly empty (65% of the time) even during this run. Increasing the amount of machines before buffer #2 might solve the problem. Let's try it!
+
+###### Run 3
+
+
+## Attatchments
+
+### Output
+
+Buffers are being printed according to the following format.
+
+`[fullness in percent] | [emptiness in percent] | [amount of items] | [size] ?? [.. buffer 2 ..] ?? [.. buffer 3..]`
+
+#### 1. Sorted by descending production
+
+    +-----------------------------------------------------------+---------+------------+---------------------+------------------+
+    | buffers                                                   | thruput | production | variance_production | variance_thruput |
+    +-----------------------------------------------------------+---------+------------+---------------------+------------------+
+    | 0.018|0.078|0|60 ?? 0.0|0.654|6|60 ?? 0.0|0.084|0|60      | 0.64    | 55.54      | 1.59                | 0.39             |
+    | 0.05|0.092|2|20 ?? 0.0|0.654|17|60 ?? 0.0|0.084|0|60      | 0.61    | 52.7       | 1.47                | 0.37             |
+    | 0.026|0.074|0|100 ?? 0.0|0.341|13|100 ?? 0.456|0.047|0|20 | 0.98    | 52.27      | 4.72                | 0.69             |
+    | 0.029|0.08|0|60 ?? 0.0|0.655|6|100 ?? 0.0|0.085|0|60      | 0.69    | 52.27      | 1.9                 | 0.43             |
+    | 0.031|0.005|51|100 ?? 0.109|0.584|7|20 ?? 0.0|0.087|3|60  | 1.43    | 52.0       | 9.47                | 0.74             |
+    | 0.023|0.08|9|100 ?? 0.003|0.37|9|60 ?? 0.43|0.05|0|20     | 0.81    | 51.87      | 3.08                | 0.58             |
+    | 0.012|0.086|0|60 ?? 0.0|0.36|18|100 ?? 0.44|0.049|15|20   | 0.8     | 51.43      | 2.91                | 0.56             |
+    | 0.004|0.078|0|100 ?? 0.0|0.654|17|100 ?? 0.0|0.082|0|100  | 0.69    | 49.44      | 1.99                | 0.45             |
+    | 0.018|0.085|0|100 ?? 0.0|0.655|12|60 ?? 0.0|0.085|0|100   | 0.7     | 48.78      | 2.09                | 0.44             |
+    | 0.014|0.018|0|100 ?? 0.111|0.57|6|20 ?? 0.038|0.084|0|20  | 1.26    | 48.13      | 7.75                | 0.76             |
+    | 0.032|0.097|6|20 ?? 0.0|0.429|16|100 ?? 0.376|0.054|6|20  | 0.68    | 48.04      | 1.99                | 0.47             |
+    | 0.012|0.09|16|60 ?? 0.002|0.399|25|60 ?? 0.404|0.052|0|20 | 0.74    | 47.91      | 2.34                | 0.48             |
+    | 0.014|0.077|8|100 ?? 0.0|0.654|6|60 ?? 0.0|0.083|0|60     | 0.72    | 47.91      | 2.24                | 0.47             |
+    | 0.011|0.075|0|60 ?? 0.0|0.655|16|100 ?? 0.0|0.083|0|100   | 0.67    | 46.63      | 1.84                | 0.43             |
+    | 0.022|0.024|18|60 ?? 0.108|0.585|13|20 ?? 0.0|0.086|0|60  | 0.88    | 46.61      | 3.32                | 0.53             |
+    | 0.031|0.017|0|60 ?? 0.103|0.572|6|20 ?? 0.046|0.083|0|20  | 0.96    | 46.39      | 4.02                | 0.57             |
+    | 0.018|0.086|15|60 ?? 0.0|0.654|0|60 ?? 0.0|0.085|0|100    | 0.66    | 45.74      | 1.73                | 0.4              |
+    | 0.06|0.087|0|20 ?? 0.0|0.655|8|60 ?? 0.0|0.085|0|100      | 0.63    | 45.52      | 1.62                | 0.4              |
+    | 0.078|0.03|0|20 ?? 0.097|0.592|13|20 ?? 0.0|0.087|0|100   | 0.68    | 45.3       | 1.8                 | 0.45             |
+    | 0.049|0.096|7|20 ?? 0.0|0.653|13|100 ?? 0.0|0.084|0|100   | 0.64    | 44.65      | 1.71                | 0.4              |
+    | 0.041|0.094|16|20 ?? 0.0|0.493|5|60 ?? 0.301|0.061|0|20   | 0.68    | 44.65      | 1.88                | 0.45             |
+    | 0.002|0.105|0|100 ?? 0.0|0.654|10|100 ?? 0.0|0.085|4|60   | 0.64    | 44.36      | 1.78                | 0.44             |
+    | 0.044|0.094|1|20 ?? 0.0|0.654|4|100 ?? 0.0|0.085|0|60     | 0.64    | 43.99      | 1.75                | 0.42             |
+    | 0.075|0.034|6|20 ?? 0.096|0.566|6|20 ?? 0.072|0.08|6|20   | 0.7     | 43.81      | 1.93                | 0.48             |
+    | 0.03|0.027|16|100 ?? 0.104|0.587|0|20 ?? 0.0|0.087|0|100  | 1.17    | 43.75      | 6.86                | 0.82             |
+    | 0.068|0.033|17|20 ?? 0.094|0.593|16|20 ?? 0.0|0.087|0|60  | 0.69    | 40.6       | 1.98                | 0.48             |
+    | 0.032|0.03|47|60 ?? 0.101|0.588|0|20 ?? 0.0|0.087|0|100   | 0.92    | 40.07      | 3.73                | 0.54             |
+    +-----------------------------------------------------------+---------+------------+---------------------+------------------+
+
+#### 2. Run 2
+
+    +-------------------------------------------------------+---------+------------+---------------------+------------------+
+    | buffers                                               | thruput | production | variance_production | variance_thruput |
+    +-------------------------------------------------------+---------+------------+---------------------+------------------+
+    | 0.059|0.09|0|20 ?? 0.0|0.654|7|40 ?? 0.001|0.086|0|40 | 0.65    | 42.03      | 2.0                 | 0.46             |
+    +-------------------------------------------------------+---------+------------+---------------------+------------------+
+
+#### 3. Run 3
+
+    +------------------------------------------------------------+---------+------------+---------------------+------------------+
+    | buffers                                                    | thruput | production | variance_production | variance_thruput |
+    +------------------------------------------------------------+---------+------------+---------------------+------------------+
+    | 0.027|0.222|0|20 ?? 0.055|0.291|11|60 ?? 0.469|0.038|10|40 | 0.54    | 117.73     | 1.0                 | 0.29             |
+    +------------------------------------------------------------+---------+------------+---------------------+------------------+

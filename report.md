@@ -9,7 +9,6 @@
 
 ### Explain
 
-- Förklara att vi inte har prestanda för att köra allt tester vi behöver
 - Definera bästa utfall
 
 ### Assumptions
@@ -36,11 +35,11 @@ A DVD factory wants to optimize there production by keeping the ratio between sy
 
 ### How it's made
 
-#### Step 1 – Performance measurements [fixa def. av throughput och production/hoour!!]
+#### Step 1 – Performance measurements [TODO: fixa def. av throughput och production/hour!!]
 
-Two key aspects were at a minimum to be analysed; throughput time, production time and miss rate on buffers. Throughput time being the amount if items produced per time unit, production time the total time for an item to be produced and miss rate on buffers the total amount of times a buffer could not receive new items or could not deliver new items to surounding machines.
+Three key aspects was analysed; throughput time, production time and miss rate on buffers. Throughput time being the amount if items produced per time unit, production time the total time for an item to be produced and miss rate on buffers the total amount of times a buffer could not receive new items or could not deliver new items to surounding machines.
 
-We want to keep the the production time and buffer misses as low and throughput time as high as possible.
+We want to keep the the production time and buffer misses low and throughput time as high as possible.
 
 #### Step 2 – States
 
@@ -210,7 +209,7 @@ We went with a object oriented design, which encapsulates all logic into classes
 
 ###### Initialization
 
-The first thing that happens on start up, right after all classes has been initialized, is scheduling of breakdowns and startup sequence for machine one. Note that there isn't any inital time set for start of machine one its being started right a way. The breakdown sequence on the other hand has an initial time frame specified by the distribution below.
+The first thing that happens on start up, right after all classes has been initialized, is scheduling of breakdowns and startup sequence for machine one. Note that there isn't any inital time set for start of machine one, it's scheduled to started right a way. The breakdown sequence on the other hand has an initial time specified by the distribution below.
 
 ###### Classes
 

@@ -178,10 +178,10 @@ class DVD < Production
     ####
 
     done_in @run_time.hours  do
-      say(buffers.map(&:current_size).to_s, :red)
-      say("Amount of loops #{loops}")
-      say("Items per hour: #{(buffers.last.items.length / @run_time.to_f).round(2)}")
-      say("Average time for item in minutes: #{(buffers.last.average_time / (60)).round(2)}")
+      # say(buffers.map(&:current_size).to_s, :red)
+      # say("Amount of loops #{loops}")
+      # say("Items per hour: #{(buffers.last.items.length / @run_time.to_f).round(2)}")
+      # say("Average time for item in minutes: #{(buffers.last.average_time / (60)).round(2)}")
     end
 
     every_time do

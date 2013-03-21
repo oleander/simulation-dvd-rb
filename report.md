@@ -38,7 +38,7 @@ A DVD factory wants to optimize there production by keeping the ratio between sy
 
 ### How it's made
 
-#### Step 1 – Performance measurements
+#### Step 1 – Performance measurements [fixa def. av throughput och production/hoour!!]
 
 Two key aspects were at a minimum to be analysed; throughput time, production time and miss rate on buffers. Throughput time being the amount if items produced per time unit, production time the total time for an item to be produced and miss rate on buffers the total amount of times a buffer could not receive new items or could not deliver new items to surounding machines.
 
@@ -294,7 +294,10 @@ Everyting were then but into a table and sorted by ascending thruput and descend
 
 ### Warm up period to steady state
 
-To ensure that the data that was used in our calculations didn't fluxuated (TODO: is this a word?), which is usuly the case in the begining of a simulation, we tried to, both graphically and mathematically determen where and when the system became stable.
+To ensure that the data that was used in our calculations didn't fluxuated (TODO: is this a word?), which is usuly the case in the begining of a simulation, we tried to, both graphically and mathematically determen where and when the system became stable. 
+
+
+Complex systems often go through a warm up period before they reach a steady state or some sort of cyclic fluctuations. To make sure that this warm up period did not influence our output values, we ran the simulations with both maximal and minimal parameter values and graphically determined a point in time where all the systems had completed their initial warm up. This time plus a margin of XXX was used as the starting point for our measurements.
 
 A parameter that nicely represents the current state of the system is the average production time of an item [min / item].
 

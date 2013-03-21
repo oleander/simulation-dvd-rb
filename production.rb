@@ -3,7 +3,7 @@ require "active_support/all"
 require "colorize"
 require "timecop"
 require "time"
-require "debugger"
+#require "debugger"
 
 module Calculation
   def self.exp(lambda)

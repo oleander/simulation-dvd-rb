@@ -31,7 +31,7 @@ end
 
 class DyeCoatingMachineGroup < MachineGroup
   def time_to_produce
-    Calculation.exp(24.46.seconds).seconds
+    Calculation.gamma().seconds
   end
 end
 

@@ -3,10 +3,17 @@ require "active_support/all"
 require "colorize"
 require "timecop"
 require "time"
+require "rsruby"
 
 module Calculation
   def self.exp(lambda)
      (-1 * Math.log(1 - rand) * lambda.to_i).seconds
+  end
+
+  @@r = RSRuby.instance
+
+  def self.gamma(shape = 3, scale = 9)
+    @@r.rgamma(1, scale, 1/scale.to_f)
   end
 end
 

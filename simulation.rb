@@ -1,5 +1,5 @@
 require "optparse"
-#require "gnuplot"
+require "gnuplot"
 #require "hirb"
 require "pp"
 require "thread"
@@ -98,67 +98,88 @@ end.parse!
 # container = Struct.new(:thruput, :production, :variance_thruput, :variance_production)
 # results  = []
 # threads = []
-options = []
+# options = []
 
-(20..100).step(40) do |b1|
-  (20..100).step(40) do |b2|
-    (20..100).step(40) do |b3|
-      (4..5).each do |im|
-        (2..3).each do |dye|
-          (2..3).each do |sputt|
-            (2..3).each do |print|
-              options << {
-                machines: {
-                  im: im,
-                  dye: dye,
-                  sputt: sputt,
-                  lac: 2, # Isn't used
-                  print: print
-                },
-                buffers: [b1, b2, b3, Infinity],
-                runtime: 24*4,
-                quiet: true
-              }
-            end
-          end
-        end
-      end
-    end
+# (20..100).step(40) do |b1|
+#   (20..100).step(40) do |b2|
+#     (20..100).step(40) do |b3|
+#       (4..5).each do |im|
+#         (2..3).each do |dye|
+#           (2..3).each do |sputt|
+#             (2..3).each do |print|
+#               options << {
+#                 machines: {
+#                   im: im,
+#                   dye: dye,
+#                   sputt: sputt,
+#                   lac: 2, # Isn't used
+#                   print: print
+#                 },
+#                 buffers: [b1, b2, b3, Infinity],
+#                 runtime: 24*4,
+#                 quiet: true
+#               }
+#             end
+#           end
+#         end
+#       end
+#     end
+#   end
+# end
+
+class R < Struct.new(:amount, :total_time)
+  def average
+    ((total_time / amount.to_f) / 60.0).round
   end
 end
 
-threads = []
-start = lambda {
-  threads << Thread.new do
-    option = nil
-    next if options.empty?
-    semaphore.synchronize {
-      option = options.shift
-    }
+option = options
+buffers = DVD.new(option[:machines], option[:buffers], option[:runtime], true).execute![:buffers]
 
-    buffers = DVD.new(option[:machines], option[:buffers], option[:runtime], option[:quiet]).execute![:buffers]
-    # pp buffers.last.items.map(&:done_at)
-    items = buffers.last.items
-    stats = Filter.new(items, 250, option[:runtime]).process!
-    semaphore.synchronize {
-      puts option.merge(stats).merge({
-        buffers: buffers.map(&:as_json)
-      }).to_json
+items = buffers.last.items
 
-      puts "----------------"
-      # results << container.new(stats[:thruput], stats[:production], stats[:variance_thruput], stats[:variance_production])
-      # puts results.length
-    }
+start_time = items.first.done_at
 
-    start.call
-  end
-}
-
-1.times do
-  start.call
+a = items.inject({}) do |result, item|
+  key = ((item.done_at.to_i - start_time.to_i) / (60.0)).round
+  result[key] ||= R.new(0, 0)
+  result[key].total_time += item.production_time
+  result[key].amount += 1
+  result
 end
 
-threads.each(&:join)
+# threads = []
+# start = lambda {
+#   threads << Thread.new do
+#     option = nil
+#     next if options.empty?
+#     semaphore.synchronize {
+#       option = options.shift
+#     }
+
+#     buffers = DVD.new(option[:machines], option[:buffers], option[:runtime], false).execute![:buffers]
+#     # pp buffers.last.items.map(&:done_at)
+#     items = buffers.last.items
+#     stats = Filter.new(items, 250, option[:runtime]).process!
+#     semaphore.synchronize {
+#       puts option.merge(stats).merge({
+#         buffers: buffers.map(&:as_json)
+#       }).to_json
+
+#       puts "----------------"
+#       # results << container.new(stats[:thruput], stats[:production], stats[:variance_thruput], stats[:variance_production])
+#       # puts results.length
+#     }
+
+#     start.call
+#   end
+# }
+
+# 1.times do
+#   start.call
+# end
+
+# threads.each(&:join)
 
 # extend Hirb::Console
 # Hirb.enable({pager: false})
@@ -169,20 +190,20 @@ threads.each(&:join)
 # pp buffers
 
 
-# Gnuplot.open do |gp|
-#   Gnuplot::Plot.new( gp ) do |plot|
-#     plot.yrange "[0:140]"
-#     plot.xrange "[0:1440]"
-#     plot.title  "Items"
-#     plot.xlabel "Minutes"
-#     plot.ylabel "Average [Production time in min / item]"
+Gnuplot.open do |gp|
+  Gnuplot::Plot.new( gp ) do |plot|
+    plot.yrange "[0:140]"
+    plot.xrange "[0:1440]"
+    plot.title  "Items"
+    plot.xlabel "Minutes"
+    plot.ylabel "Average [Production time in min / item]"
     
-#     x = a.keys
-#     y = a.values.map(&:average)
+    x = a.keys
+    y = a.values.map(&:average)
 
-#     plot.data << Gnuplot::DataSet.new( [x, y] ) do |ds|
-#       ds.with = "linespoints"
-#       ds.notitle
-#     end
-#   end
-# end
+    plot.data << Gnuplot::DataSet.new( [x, y] ) do |ds|
+      ds.with = "linespoints"
+      ds.notitle
+    end
+  end
+end

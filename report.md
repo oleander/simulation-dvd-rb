@@ -183,6 +183,7 @@ We want to keep the the production time and buffer misses as low and throughput 
 
 #### Step 4 – Distributions
 
+![qq-plot](qq-plot.jpeg)
 
 ##### Injection molding
 

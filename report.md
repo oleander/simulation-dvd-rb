@@ -14,6 +14,7 @@
 - Förklara hur vi valde dis.
 - Förklara vad som händer med en item som fastnar i sputt
 - Förklara att vi inte har prestanda för att köra allt tester vi behöver
+- Definera bästa utfall
 
 ### Assumptions
 
@@ -33,16 +34,32 @@ This part does the same thing as the sputtering. It process 20 items in sequence
 
 A DVD factory wants to optimize there production by keeping the ratio between system throughput, buffer size and the amount of machines has low as possible.
 
-## Explanation of the models
+### Analysis of the problem
 
-### Events and event handlers
+### How it's made
 
-- Injection molding #1
-- Dye coating #2
+#### Step 1 – Performance measurements
 
-Note 1: All logic related to a machine is encapsulated in its own event handler. This means that this event might be called even tho the machine group it self isn't ready. So for example if machine #2 has started and therefor decresed buffer #1 by one (the buffer used by machine #1 and machine #2) it will, without checking the state of machine group #2, try to start #1 by calling event handler #1. This structure means that we can keep all logic for one machine group contained within one event handler.
+Two key aspects were at a minimum to be analysed; throughput time, production time and miss rate on buffers. Throughput time being the amount if items produced per time unit, production time the total time for an item to be produced and miss rate on buffers the total amount of times a buffer could not receive new items or could not deliver new items to surounding machines.
 
-Note 2: We've tried to do as few things as possible in one event handler, even if the outcome in some cases is an event handler that only acts as a proxy. One example is event handler #5. It only acts as a implementation proxy with the single purpose of reporting its current state and call event handler #6. An alternitive would be to call event handler #6 directly from #4. The drawback would be a bit more complicated event graph, which wouldn't benefit anyone.
+We want to keep the the production time and buffer misses as low and throughput time as high as possible.
+
+#### Step 2 – States
+
+- Buffer
+  - Current items
+  - Reserved items
+  - Amount of misses related to 'fullness'
+  - Amount of misses related to 'emptyness'
+- Machine
+  - State (idle, break, start)
+- Item
+  - done_at
+  - created_at
+
+#### Step 3 – Event graph and handlers
+
+![event-graph](resources/event-graph.png)
 
 - #1 (Start injection molding)
   - Tries to start injection molding machine
@@ -164,106 +181,36 @@ Note 2: We've tried to do as few things as possible in one event handler, even i
   - Changes
     - Mark machine as fixed. This will put the fixed machine in the idle state
 
-### Performence measurements
+#### Step 4 – Distributions
 
-Two key aspects were at a minimum to be analysed; throughput time, production time and miss rate on buffers. Throughput time being the amount if items produced per time unit, production time the total time for an item to be produced and miss rate on buffers the total amount of times a buffer could not receive new items or could not deliver new items to surounding machines.
+#### Step 5 – Implementation
 
-We want to keep the the production time and buffer misses as low and throughput time as high as possible.
+All logic related to a machine is encapsulated in its own event handler. This means that this event might be called even tho the machine group it self isn't ready. So for example if machine #2 has started and therefor decresed buffer #1 by one (the buffer used by machine #1 and machine #2) it will, without checking the state of machine group #2, try to start #1 by calling event handler #1. This structure means that we can keep all logic for one machine group contained within one event handler.
 
-### States
+We've tried to do as few things as possible in one event handler, even if the outcome in some cases is an event handler that only acts as a proxy. One example is event handler #5. It only acts as a implementation proxy with the single purpose of reporting its current state and call event handler #6. An alternitive would be to call event handler #6 directly from #4. The drawback would be a bit more complicated event graph, which wouldn't benefit anyone.
 
-- Buffer
-  - Current items
-  - Reserved items
-  - Amount of misses related to 'fullness'
-  - Amount of misses related to 'emptyness'
-- Machine
-  - State (idle, break, start)
-- Item
-  - done_at
-  - created_at
-
-### Warm up period to steady state
-
-To ensure that the data that was used in our calculations didn't fluxuated (TODO: is this a word?), which is usuly the case in the begining of a simulation, we tried to, both graphically and mathematically determen where when the system became stable.
-
-A parameter that nicely represents the current state of the system is the average production time of an item [min / item].
-
-We did not have the CPU power to look at hundreds of samples for finding the warm up period. Instead of looked at the edge cases.
-
-Clarification: The x-axis represents the elapsed time in minutes and the y-axis the average time in minutes for an item to pass through the system.
-
-- Max buffers, minimum amount of machines
-
-![1](resources/1.png)
-
-- Max buffers, maximum amount of machines
-
-![2](resources/2.png)
-
-- Min buffers, minimum amount of machines
-
-![3](resources/3.png)
-
-- Min buffers, maximum amount of machines
-
-![4](resources/4.png)
-
-It looks like image #3 has the higest warm up period of 200 minutes. Adding an extra 50 minutes as a margin would keep us out of the warm range.
-
-### Set up
-
-To ensure the *best outcome be started by defining the upper and lower limits. The current configuration for system is as follow.
-
-- Buffer capacities
-  - #1 as a max capacity of 20
-  - #2 as a max capacity of 20, by can only handle ha mutiple of 20
-  - #3 as a max capacity of 20
-- Amount of machines
-  - Injection molding: 4
-  - Dye coating: 2
-  - Sputtering: 2
-  - Lacquer coating: 2
-  - Printing: 2
-
-We call this set up the base line. This means that we won't go below any of the below numbers. 
-
-The upper limits was a bit more tricky. Increasing base line to infinity capacity wouldn't make any sence, nor would it be realistic. Accordint to the interview a realistic upper limits for the buffers would be 100, 100 and 100, but nothing were specified for the machines.
-
-According to our tests one simulation simulating 3 days took approximately 90 seconds using the base line.
-
-Increasing each buffer by 20 up to a hundred would take 64 itterations. We then want to try to increase the amount of machines with one. This would result in a total of 2048 itterations, which would take approximately two and a half day to run.
-
-In each iiteration the following data where calculated and collected.
-
-- thruput
-- production
-- variance thruput
-- variance_production
-- buffer misses
-
-Everyting were then but into a table and sorted by ascending thruput and descending production. The top 10 results can be found in an apendix (TODO: add apendix).
-
-### Analysis of the problem
-
-### Implementation details
+##### Details
 
 The implementation is done in the programming language Ruby. It's now super fast, which is shown in the benchmark tests, but it's highly effecent when doing prototyping.
 
 We went with a object oriented design, which encapsulates all logic into classes. This made a huge diffrentce when it came to implementing the event handlers. I most cases the amount of code in the psudo example above and the real implementation is almost a one to one mapping.
 
-#### Classes
+###### Initialization
+
+The first thing that happens on start up, right after all classes has been initialized, is scheduling of breakdowns and startup sequence for machine one. Note that there isn't any inital time set for start of machine one its being started right a way. The breakdown sequence on the other hand has an initial time frame specified by the distribution below.
+
+###### Classes
 
 ![er](resources/er-dvd.png)
 
-##### MachineGroup
+####### MachineGroup
 
 This class represents a group of machines of a certain kind, for example a printing machine. As soon as a machine within a specific group wants to be started the machine group is asked. It will try to start a machine given that the following conditions are satisfied:
 
 - Is there enough room in the next and previous buffer?
 - Do we have any machines avalible?
 
-##### Machine
+####### Machine
 
 Represents one single machine with in a group. A machine move between three different states.
 
@@ -271,7 +218,7 @@ Represents one single machine with in a group. A machine move between three diff
 - Started - The macine is currently busy and can therefore not be started
 - Broken - The machine is currently broken and can therefore not be started
 
-##### Buffer
+####### Buffer
 
 Keeps track on all items. There are two diffrent buffers, one normal that has a maximum size and one sizeless buffer that acts as output for the system. The endless buffer is connected to machine 4.
 
@@ -281,6 +228,10 @@ A buffer knows how many time a machine has *tried* to interact with it using the
 - Emptyness - The amount of times a machine wanted to take items but could due to emptyness.
 
 These two parameters are important in trying to find the bottleneck in our system. A high *emptyness* value in a buffer means that we should increase the buffer size or the amount of machines in previous steps. A high *fullness* value in a buffer means that there is a bottleneck to the right. Increasing buffer or/and the amount of machines might solve the problem.
+
+####### Item
+
+Encapsulates the time from which the item was created and added to the *output buffer*.
 
 ###### Reservations
 
@@ -306,24 +257,65 @@ This is how it would look from machine #1 point of view *when is comes to dealin
   - Unreserve 1 item in next buffer
   - Add one item to next buffer
 
-##### Item
+#### Step 6 - Simulation
 
-Encapsulates the time from which the item was created and added to the *output buffer*.
+To ensure the best outcome we started by defining the upper and lower limits for the system. The current configuration is as follows.
 
-### How it's made
+- Buffer capacities
+  - #1 as a max capacity of 20
+  - #2 as a max capacity of 20, by can only handle ha mutiple of 20
+  - #3 as a max capacity of 20
+- Amount of machines
+  - Injection molding: 4
+  - Dye coating: 2
+  - Sputtering: 2
+  - Lacquer coating: 2
+  - Printing: 2
 
-#### Step 1 – Performance measurements
+We call this set up the base line, we won't go below any of the above numbers. 
 
-#### Step 2 – States
+The upper limits was a bit more tricky. Increasing the base line to infinity capacity wouldn't make any sense, nor would it be realistic. According to the interview a realistic upper limits for the buffers would be 100, 100 and 100, but nothing were specified for the machines.
 
-#### Step 4 – Event graph
+To get a proper sample size one could either run multiply times for a short perioid of time or run the simlulation a bit longer but only once. We went with running the simulation for a longer period, in our case 3 days. According to our tests one simulation simulating 3 days took approximately 90 seconds using the base line.
 
-![event-graph](resources/event-graph.png)
+Increasing each buffer by 40 up to a hundred for each buffer would take 27 itterations. We then wanted to try to increase the amount of machines with one. This would result in a total of 432 itterations, which would take approximately 11 hours to run.
 
-#### Step 5 – Distributions
+In each iiteration the following data where calculated and collected.
 
-#### Step 6 – Implementation
+- thruput
+- production
+- variance thruput
+- variance production
+- buffer misses
 
-#### Step 7 - Simulation
+Everyting were then but into a table and sorted by ascending thruput and descending production. The top 10 results can be found in an apendix (TODO: add apendix).
 
-#### Step 8 – Output analysis
+#### Step 7 – Output analysis
+
+### Warm up period to steady state
+
+To ensure that the data that was used in our calculations didn't fluxuated (TODO: is this a word?), which is usuly the case in the begining of a simulation, we tried to, both graphically and mathematically determen where and when the system became stable.
+
+A parameter that nicely represents the current state of the system is the average production time of an item [min / item].
+
+We did not have the CPU power to look all samples to find the warm up period, instead we used the edge cases. 
+
+Note: The x-axis represents the elapsed time in minutes and the y-axis the average time in minutes for an item to pass through the system.
+
+- Max buffers, minimum amount of machines
+
+![1](resources/1.png)
+
+- Max buffers, maximum amount of machines
+
+![2](resources/2.png)
+
+- Min buffers, minimum amount of machines
+
+![3](resources/3.png)
+
+- Min buffers, maximum amount of machines
+
+![4](resources/4.png)
+
+It looks like image #3 has the highest warm up period of 200 minutes. Adding an extra 50 minutes as a margin would keep us out of the warm range.

@@ -98,7 +98,6 @@ end.parse!
 # container = Struct.new(:thruput, :production, :variance_thruput, :variance_production)
 # results  = []
 # threads = []
-
 # options = []
 
 # (20..100).step(40) do |b1|
@@ -128,6 +127,27 @@ end.parse!
 #   end
 # end
 
+class R < Struct.new(:amount, :total_time)
+  def average
+    ((total_time / amount.to_f) / 60.0).round
+  end
+end
+
+option = options
+buffers = DVD.new(option[:machines], option[:buffers], option[:runtime], true).execute![:buffers]
+
+items = buffers.last.items
+
+start_time = items.first.done_at
+
+a = items.inject({}) do |result, item|
+  key = ((item.done_at.to_i - start_time.to_i) / (60.0)).round
+  result[key] ||= R.new(0, 0)
+  result[key].total_time += item.production_time
+  result[key].amount += 1
+  result
+end
+
 # threads = []
 # start = lambda {
 #   threads << Thread.new do
@@ -137,7 +157,7 @@ end.parse!
 #       option = options.shift
 #     }
 
-#     buffers = DVD.new(option[:machines], option[:buffers], option[:runtime], option[:quiet]).execute![:buffers]
+#     buffers = DVD.new(option[:machines], option[:buffers], option[:runtime], false).execute![:buffers]
 #     # pp buffers.last.items.map(&:done_at)
 #     items = buffers.last.items
 #     stats = Filter.new(items, 250, option[:runtime]).process!
@@ -180,33 +200,3 @@ puts option
 buffers = DVD.new(option[:machines], option[:buffers], option[:runtime], option[:quiet]).execute![:buffers]
 puts buffers
 items = buffers.last.items
-
-puts items.count
-
-start_time = items.first.done_at
-
-a = items.inject({}) do |result, item|
-  key = ((item.done_at.to_i - start_time.to_i) / (60.0)).round
-  result[key] ||= R.new(0, 0)
-  result[key].total_time += item.production_time
-  result[key].amount += 1
-  result
-end
-
-Gnuplot.open do |gp|
-  Gnuplot::Plot.new( gp ) do |plot|
-    # plot.yrange "[0:140]"
-    # plot.xrange "[0:1440]"
-    plot.title  "Items"
-    plot.xlabel "Minutes"
-    plot.ylabel "Average [Production time in min / item]"
-    
-    x = a.keys
-    y = a.values.map(&:average)
-
-    plot.data << Gnuplot::DataSet.new( [x, y] ) do |ds|
-      ds.with = "linespoints"
-      ds.notitle
-    end
-  end
-end

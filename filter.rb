@@ -6,7 +6,6 @@ class Filter < Struct.new(:items, :offset, :runtime)
   end
 
   def process!
-    start_time = items.first.created_at
     start_time = items.first.done_at
     limit = start_time.to_i + offset * 60
 

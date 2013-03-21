@@ -7,6 +7,9 @@ require "rsruby"
 
 P = RSRuby.instance
 
+#require "debugger"
+
+
 module Calculation
   def self.exp(lambda)
      (-1 * Math.log(1 - rand) * lambda.to_i).seconds

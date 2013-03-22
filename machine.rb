@@ -10,7 +10,7 @@ class Machine
 
   state_machine :state, initial: :idle do
     event :start do
-      transition [:idle, :break] => :start
+      transition [:idle] => :start
     end
 
     event :break do

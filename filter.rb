@@ -34,7 +34,8 @@ class Filter < Struct.new(:items, :offset, :runtime)
       production: (production * 60 * 60).round(2),
       thruput: (thruput / (60 * 60)).round(2),
       variance_thruput: variance_thruput.round(2),
-      variance_production: variance_production.round(2)
+      variance_production: variance_production.round(2),
+      length: items.length
     }
   end
 end

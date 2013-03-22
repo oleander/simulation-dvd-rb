@@ -1,3 +1,0 @@
-[1mError during wrapup: [0m[1mC stack usage is too close to the limit
-[0m[1mExecution halted
-[0m
